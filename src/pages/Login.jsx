@@ -54,7 +54,10 @@ export default function Login() {
               }}
             >
               <div style={{ textAlign: "center", marginBottom: 4 }}>
-                <h1 className="page-title" style={{ margin: 0 }}>
+                <h1
+                  className="page-title"
+                  style={{ margin: 0, textAlign: "center" }}
+                >
                   Welcome back!
                 </h1>
                 <p className="page-lead" style={{ marginTop: 6 }}>

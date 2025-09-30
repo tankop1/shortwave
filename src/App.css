@@ -10,7 +10,7 @@
     rgba(0, 0, 0, 0) 100%
   );
   backdrop-filter: blur(6px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .site-header .inner {
@@ -209,6 +209,18 @@
   aspect-ratio: 16 / 10;
 }
 
+.film-card {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.film-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
 @media (max-width: 900px) {
   .card {
     grid-column: span 6;
@@ -218,5 +230,194 @@
 @media (max-width: 600px) {
   .card {
     grid-column: span 12;
+  }
+}
+
+/* Film page styles */
+.film-page {
+  min-height: 100vh;
+  background: var(--color-black);
+  padding: 24px 0;
+}
+
+.film-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.film-player {
+  margin-bottom: 32px;
+}
+
+.film-player-placeholder {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #f0f0f0;
+  border-radius: 16px;
+  overflow: hidden;
+  background-image: linear-gradient(45deg, #ccc 25%, transparent 25%),
+    linear-gradient(-45deg, #ccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ccc 75%),
+    linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+.film-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.play-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.film-player-placeholder:hover .play-overlay {
+  opacity: 1;
+}
+
+.play-button {
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-black);
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.play-button:hover {
+  transform: scale(1.1);
+  background: var(--color-white);
+}
+
+.film-details {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.film-info {
+  flex: 1;
+}
+
+.film-title {
+  font-family: var(--font-display);
+  font-size: 48px;
+  line-height: 1.1;
+  color: var(--color-white);
+  margin: 0 0 16px 0;
+  font-weight: 700;
+}
+
+.film-description {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--color-white);
+  margin: 0;
+  opacity: 0.9;
+}
+
+.film-author {
+  flex-shrink: 0;
+}
+
+.author-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.author-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-white);
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+}
+
+/* Loading placeholders */
+.loading-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+.film-title-placeholder {
+  height: 48px;
+  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  width: 60%;
+}
+
+.film-description-placeholder {
+  height: 24px;
+  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 8px;
+  width: 80%;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .film-container {
+    padding: 0 16px;
+  }
+
+  .film-title {
+    font-size: 36px;
+  }
+
+  .film-description {
+    font-size: 16px;
+  }
+
+  .film-details {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .film-author {
+    align-self: flex-end;
   }
 }
