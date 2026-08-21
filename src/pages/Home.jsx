@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom'
 import Icon from '../components/Icon'
 import FilmRow from '../components/FilmRow'
 import { HomeSkeleton } from '../components/Skeleton'
+import { filmRating } from '../lib/reviews'
 
 export default function Home() {
   const { films, catalogLoading, featuredFilm, featuredLoading, byId, onOpen, onUpload, profile, user } =
@@ -20,6 +21,16 @@ export default function Home() {
     const ids = profile?.savedFilmIds || []
     return ids.map(byId).filter(Boolean)
   }, [profile, byId])
+
+  const bestRated = useMemo(
+    () =>
+      films
+        .map((film) => ({ film, ...filmRating(film) }))
+        .filter((item) => item.count > 0)
+        .sort((a, b) => b.average - a.average || b.count - a.count)
+        .map((item) => item.film),
+    [films],
+  )
 
   if (catalogLoading || featuredLoading) {
     return (
@@ -71,6 +82,16 @@ export default function Home() {
           hint={`${films.length} titles`}
           films={films}
           onOpen={onOpen}
+        />
+      )}
+      {bestRated.length > 0 && (
+        <FilmRow
+          scroll
+          title="Best rated"
+          hint={`${bestRated.length} titles`}
+          films={bestRated}
+          onOpen={onOpen}
+          tag="rating"
         />
       )}
       {crew.length > 0 && (

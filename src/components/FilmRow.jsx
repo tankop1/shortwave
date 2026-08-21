@@ -1,6 +1,6 @@
 import FilmCard from './FilmCard'
 
-export default function FilmRow({ title, hint, films, onOpen, scroll = false }) {
+export default function FilmRow({ title, hint, films, onOpen, scroll = false, tag = 'genre' }) {
   return (
     <section className={scroll ? 'block block-scroll' : 'block'}>
       {title && (
@@ -14,7 +14,7 @@ export default function FilmRow({ title, hint, films, onOpen, scroll = false }) 
       ) : (
         <div className={scroll ? 'feature-row' : 'feature-grid'}>
           {films.map((film) => (
-            <FilmCard key={film.id} film={film} onOpen={onOpen} />
+            <FilmCard key={film.id} film={film} onOpen={onOpen} tag={tag} />
           ))}
         </div>
       )}

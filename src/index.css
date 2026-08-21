@@ -788,6 +788,10 @@ button {
   left: 12px;
 }
 
+.shot-tag-rating {
+  color: var(--accent);
+}
+
 .shot-dur {
   right: 12px;
 }
