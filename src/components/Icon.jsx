@@ -9,6 +9,7 @@ const ICONS = {
   play: 'https://img.icons8.com/?id=EhGBqlGKPOmj&format=png&size=64',
   close: 'https://img.icons8.com/?id=vu5kHwGC4PNb&format=png&size=64',
   'add-image': 'https://img.icons8.com/?id=60628&format=png&size=64',
+  share: 'https://img.icons8.com/?id=wAGXgZL0yrTF&format=png&size=64',
 }
 
 export default function Icon({ name, className = '' }) {

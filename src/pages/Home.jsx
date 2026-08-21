@@ -5,8 +5,9 @@ import FilmRow from '../components/FilmRow'
 import { HomeSkeleton } from '../components/Skeleton'
 
 export default function Home() {
-  const { films, catalogLoading, byId, onOpen, onUpload, profile, user } = useOutletContext()
-  const featured = films[0] || null
+  const { films, catalogLoading, featuredFilm, featuredLoading, byId, onOpen, onUpload, profile, user } =
+    useOutletContext()
+  const featured = featuredFilm || films[0] || null
 
   const crew = useMemo(() => {
     if (!user) return []
@@ -20,7 +21,7 @@ export default function Home() {
     return ids.map(byId).filter(Boolean)
   }, [profile, byId])
 
-  if (catalogLoading) {
+  if (catalogLoading || featuredLoading) {
     return (
       <main className="home" aria-busy="true">
         <HomeSkeleton />

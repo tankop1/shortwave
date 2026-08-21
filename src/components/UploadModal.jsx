@@ -205,7 +205,6 @@ export default function UploadModal({ film, onClose }) {
           inviteSentAt: member.inviteSentAt || null,
         })),
         crewUids: crew.map((member) => member.userId).filter(Boolean),
-        views30d: film?.views30d || 0,
         updatedAt: serverTimestamp(),
       }
       let filmId = film?.id
@@ -214,6 +213,8 @@ export default function UploadModal({ film, onClose }) {
       } else {
         const created = await addDoc(collection(db, 'films'), {
           ...payload,
+          views: 0,
+          uniqueViewers: 0,
           createdAt: serverTimestamp(),
         })
         filmId = created.id

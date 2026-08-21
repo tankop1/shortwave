@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { collection, doc, onSnapshot, query, updateDoc, where } from 'firebase/firestore'
+import { collection, doc, getDoc, onSnapshot, query, updateDoc, where } from 'firebase/firestore'
 import Sidebar from '../components/Sidebar'
 import Player from '../components/Player'
 import UploadModal from '../components/UploadModal'
@@ -10,6 +10,8 @@ import ProfileModal from '../components/ProfileModal'
 import { useAuth } from '../auth/AuthContext'
 import { db } from '../firebase'
 import { decorateFilm, isCatalogVisible, isPublicPath } from '../data'
+import { filmIdFromSearch } from '../lib/share'
+import { parseVideoUrl } from '../lib/video'
 
 function sortByCreated(a, b) {
   const av = a.createdAt?.toMillis?.() || 0
@@ -19,6 +21,23 @@ function sortByCreated(a, b) {
 
 function docsToFilms(snap, uid) {
   return snap.docs.map((item) => decorateFilm({ id: item.id, ...item.data() }, uid))
+}
+
+function featuredLookupKey(value) {
+  if (value == null || value === '') return null
+  if (typeof value === 'object') {
+    if (typeof value.videoId === 'string' && value.videoId.trim()) return value.videoId.trim()
+    if (typeof value.id === 'string' && value.id) return value.id
+    return null
+  }
+  const raw = String(value).trim()
+  if (!raw) return null
+  return parseVideoUrl(raw)?.id || raw
+}
+
+function filmMatchesFeatured(film, key) {
+  if (!key || !film) return false
+  return String(film.videoId || '') === String(key) || film.id === key
 }
 
 export default function AppShell() {
@@ -36,8 +55,27 @@ export default function AppShell() {
   const [myReady, setMyReady] = useState(false)
   const [crewRaw, setCrewRaw] = useState([])
   const [crewReady, setCrewReady] = useState(false)
+  const [linkedFilm, setLinkedFilm] = useState(null)
+  const [featuredKey, setFeaturedKey] = useState(null)
+  const [featuredReady, setFeaturedReady] = useState(false)
 
   const uid = user?.uid || null
+  const filmParam = filmIdFromSearch(location.search)
+
+  useEffect(() => {
+    return onSnapshot(
+      doc(db, 'admin', 'featuredFilmControls'),
+      (snap) => {
+        const value = snap.exists() ? snap.data()?.weeklyFeaturedFilm : null
+        setFeaturedKey(featuredLookupKey(value))
+        setFeaturedReady(true)
+      },
+      () => {
+        setFeaturedKey(null)
+        setFeaturedReady(true)
+      },
+    )
+  }, [])
 
   useEffect(() => {
     const q = query(collection(db, 'films'), where('status', '==', 'published'))
@@ -106,26 +144,68 @@ export default function AppShell() {
   useEffect(() => {
     if (loading) return
     if (!user && !isPublicPath(location.pathname)) {
-      navigate('/', { replace: true })
+      navigate(filmParam ? `/?film=${encodeURIComponent(filmParam)}` : '/', { replace: true })
       setAuthMode('signup')
     }
-  }, [user, loading, location.pathname, navigate])
+  }, [user, loading, location.pathname, navigate, filmParam])
 
   const catalog = useMemo(
     () => catalogRaw.filter(isCatalogVisible).sort(sortByCreated),
     [catalogRaw],
   )
   const myFilms = useMemo(() => [...myRaw].sort(sortByCreated), [myRaw])
+  const featuredFilm = useMemo(() => {
+    if (featuredKey) {
+      const match = [...catalogRaw, ...myRaw, ...crewRaw].find((film) =>
+        filmMatchesFeatured(film, featuredKey),
+      )
+      if (match) return match
+    }
+    return catalog[0] || null
+  }, [featuredKey, catalogRaw, myRaw, crewRaw, catalog])
 
   const byId = useCallback(
     (id) => {
-      const pool = [...catalogRaw, ...myRaw, ...crewRaw]
+      const pool = [...catalogRaw, ...myRaw, ...crewRaw, linkedFilm].filter(Boolean)
       return pool.find((film) => film.id === id) || null
     },
-    [catalogRaw, myRaw, crewRaw],
+    [catalogRaw, myRaw, crewRaw, linkedFilm],
   )
 
   const activeFilm = activeId ? byId(activeId) : null
+
+  useEffect(() => {
+    if (filmParam) setActiveId(filmParam)
+  }, [filmParam])
+
+  useEffect(() => {
+    if (!activeId) {
+      setLinkedFilm(null)
+      return undefined
+    }
+    if (catalogRaw.some((film) => film.id === activeId) || myRaw.some((film) => film.id === activeId) || crewRaw.some((film) => film.id === activeId)) {
+      setLinkedFilm(null)
+      return undefined
+    }
+    if (!catalogReady) return undefined
+
+    let cancelled = false
+    getDoc(doc(db, 'films', activeId))
+      .then((snap) => {
+        if (cancelled) return
+        if (!snap.exists()) {
+          setLinkedFilm(null)
+          return
+        }
+        setLinkedFilm(decorateFilm({ id: snap.id, ...snap.data() }, uid))
+      })
+      .catch(() => {
+        if (!cancelled) setLinkedFilm(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [activeId, catalogRaw, myRaw, crewRaw, catalogReady, uid])
 
   const pendingCredits = useMemo(() => {
     if (!uid) return []
@@ -134,6 +214,18 @@ export default function AppShell() {
       return (film.crew || []).some((member) => member.userId === uid && member.state === 'pending')
     })
   }, [crewRaw, uid])
+
+  function closePlayer() {
+    setActiveId(null)
+    if (!filmParam) return
+    const params = new URLSearchParams(location.search)
+    params.delete('film')
+    const search = params.toString()
+    navigate(
+      { pathname: location.pathname, search: search ? `?${search}` : '', hash: location.hash },
+      { replace: true },
+    )
+  }
 
   function openAuth(mode) {
     setAuthMode(mode)
@@ -145,7 +237,7 @@ export default function AppShell() {
       return
     }
     if (needsOnboarding) return
-    setActiveId(null)
+    closePlayer()
     setEditFilm(film)
     setUploadOpen(true)
   }
@@ -171,6 +263,8 @@ export default function AppShell() {
           context={{
             films: catalog,
             catalogLoading: !catalogReady,
+            featuredFilm,
+            featuredLoading: !featuredReady,
             myFilms,
             libraryLoading: loading || Boolean(uid && (!myReady || !crewReady)),
             pendingCredits,
@@ -186,7 +280,7 @@ export default function AppShell() {
         />
       </div>
 
-      {activeFilm && <Player film={activeFilm} onClose={() => setActiveId(null)} />}
+      {activeFilm && <Player film={activeFilm} onClose={closePlayer} />}
       {uploadOpen && !needsOnboarding && (
         <UploadModal
           film={editFilm}

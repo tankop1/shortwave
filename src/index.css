@@ -64,6 +64,16 @@ button {
   opacity: 1;
 }
 
+.icon-share {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-accent {
+  filter: invert(52%) sepia(78%) saturate(1750%) hue-rotate(346deg) brightness(98%) contrast(92%);
+  opacity: 1;
+}
+
 .app {
   min-height: 100%;
   display: grid;
@@ -1282,9 +1292,14 @@ button {
 }
 
 .project-stats {
-  width: 110px;
   flex: none;
+  display: flex;
+  gap: 18px;
   text-align: right;
+}
+
+.project-stat {
+  min-width: 64px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1303,8 +1318,15 @@ button {
   color: var(--mute);
 }
 
-.project-edit {
+.project-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 14px;
+}
+
+.project-edit {
+  margin-top: 0;
   align-self: flex-start;
   background: rgba(255, 255, 255, 0.08);
 }
@@ -2318,6 +2340,7 @@ button {
   }
 
   .project-stats {
+    justify-content: flex-start;
     text-align: left;
   }
 

@@ -73,12 +73,9 @@ export const NAV = [
     ],
   },
   {
-    section: 'Make',
-    items: [{ id: 'projects', label: 'My Projects', icon: 'folder', to: '/projects' }],
-  },
-  {
     section: 'You',
     items: [
+      { id: 'projects', label: 'My Projects', icon: 'folder', to: '/projects' },
       { id: 'portfolio', label: 'Portfolio', icon: 'clapper', to: '/portfolio' },
       { id: 'saved', label: 'Your list', icon: 'heart', to: '/list' },
     ],

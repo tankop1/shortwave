@@ -5,10 +5,13 @@ import Icon from '../components/Icon'
 import { ProjectListSkeleton } from '../components/Skeleton'
 import { db } from '../firebase'
 import { statusKind, statusLabel } from '../data'
+import { copyFilmLink } from '../lib/share'
+import { filmAnalytics, formatCount } from '../lib/views'
 
 export default function Projects() {
   const { myFilms, libraryLoading, pendingCredits, onUpload, onEdit, user } = useOutletContext()
   const [dismissed, setDismissed] = useState([])
+  const [copiedId, setCopiedId] = useState(null)
 
   const pending = pendingCredits.filter((film) => !dismissed.includes(film.id))
   const embargoed = myFilms.filter((film) => film.status === 'embargoed').length
@@ -24,6 +27,16 @@ export default function Projects() {
 
   function disputeCredit(film) {
     setDismissed((current) => [...current, film.id])
+  }
+
+  async function shareFilm(film) {
+    try {
+      await copyFilmLink(film.id)
+      setCopiedId(film.id)
+      window.setTimeout(() => setCopiedId((current) => (current === film.id ? null : current)), 1800)
+    } catch {
+      /* ignore */
+    }
   }
 
   if (libraryLoading) {
@@ -103,18 +116,39 @@ export default function Projects() {
                   <span className={`status-pill status-${statusKind(film)}`}>{statusLabel(film)}</span>
                 </div>
                 <p className="project-logline">{film.logline}</p>
-                <button type="button" className="ghost-btn project-edit" onClick={() => onEdit(film)}>
-                  Edit
-                </button>
+                <div className="project-actions">
+                  <button type="button" className="ghost-btn project-edit" onClick={() => onEdit(film)}>
+                    Edit
+                  </button>
+                  {film.status === 'published' && (
+                    <button type="button" className="ghost-btn project-edit" onClick={() => shareFilm(film)}>
+                      <Icon name="share" className="icon-share" />
+                      {copiedId === film.id ? 'Copied' : 'Share'}
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="project-stats">
-                <div className="project-views">{film.views30d || 0}</div>
-                <div className="project-views-label">views · 30d</div>
-              </div>
+              <ProjectStats film={film} />
             </div>
           ))}
         </div>
       )}
     </main>
+  )
+}
+
+function ProjectStats({ film }) {
+  const { watched, plays } = filmAnalytics(film)
+  return (
+    <div className="project-stats">
+      <div className="project-stat">
+        <div className="project-views">{formatCount(watched)}</div>
+        <div className="project-views-label">{watched === 1 ? 'person' : 'people'}</div>
+      </div>
+      <div className="project-stat">
+        <div className="project-views">{formatCount(plays)}</div>
+        <div className="project-views-label">{plays === 1 ? 'play' : 'plays'}</div>
+      </div>
+    </div>
   )
 }

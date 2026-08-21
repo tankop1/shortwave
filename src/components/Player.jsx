@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
-import { doc, increment, updateDoc } from 'firebase/firestore'
 import Icon from './Icon'
-import { db } from '../firebase'
 import { useAuth } from '../auth/AuthContext'
 import { embedUrl } from '../lib/video'
+import { copyFilmLink } from '../lib/share'
+import { filmAnalytics, formatCount, recordWatch } from '../lib/views'
 
 export default function Player({ film, onClose }) {
   const { user, profile, saveProfile } = useAuth()
   const [playing, setPlaying] = useState(Boolean(embedUrl(film)))
+  const [copied, setCopied] = useState(false)
   const embed = embedUrl(film)
   const saved = (profile?.savedFilmIds || []).includes(film.id)
+  const { watched, plays } = filmAnalytics(film)
 
   useEffect(() => {
     function onKey(event) {
@@ -25,10 +27,14 @@ export default function Player({ film, onClose }) {
   }, [onClose])
 
   useEffect(() => {
-    if (!film?.id) return undefined
-    updateDoc(doc(db, 'films', film.id), { views30d: increment(1) }).catch(() => {})
-    return undefined
-  }, [film.id])
+    recordWatch({ id: film.id, ownerId: film.ownerId }, user?.uid).catch(() => {})
+  }, [film.id, film.ownerId, user?.uid])
+
+  useEffect(() => {
+    if (!copied) return undefined
+    const timer = window.setTimeout(() => setCopied(false), 1800)
+    return () => window.clearTimeout(timer)
+  }, [copied])
 
   async function toggleSave() {
     if (!user) return
@@ -39,9 +45,9 @@ export default function Player({ film, onClose }) {
   }
 
   async function share() {
-    const url = film.videoUrl || window.location.href
     try {
-      await navigator.clipboard.writeText(url)
+      await copyFilmLink(film.id)
+      setCopied(true)
     } catch {
       /* ignore */
     }
@@ -90,7 +96,18 @@ export default function Player({ film, onClose }) {
           <div className="player-top">
             <div>
               <div className="player-kicker">
-                {[film.genre, film.dur, film.year].filter(Boolean).join(' · ')}
+                {[
+                  film.genre,
+                  film.dur,
+                  film.year,
+                  watched > 0
+                    ? `${formatCount(watched)} watched`
+                    : plays > 0
+                      ? `${formatCount(plays)} views`
+                      : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </div>
               <h2 id="player-title" className="player-title">
                 {film.title}
@@ -100,12 +117,13 @@ export default function Player({ film, onClose }) {
             <div className="player-actions">
               {user && (
                 <button type="button" className="ghost-btn" onClick={toggleSave}>
-                  <Icon name="heart" />
+                  <Icon name="heart" className={saved ? 'icon-accent' : ''} />
                   {saved ? 'Saved' : 'Save'}
                 </button>
               )}
               <button type="button" className="ghost-btn" onClick={share}>
-                Share
+                <Icon name="share" className="icon-share" />
+                {copied ? 'Copied' : 'Share'}
               </button>
             </div>
           </div>
