@@ -4,7 +4,7 @@ import Icon from './Icon'
 import { useAuth } from '../auth/AuthContext'
 import { NAV, PUBLIC_PATHS, initialsFromName } from '../data'
 
-export default function Sidebar({ onUpload, onSignup, onLogin, onProtectedNav, onEditProfile }) {
+export default function Sidebar({ open = false, onClose, onUpload, onSignup, onLogin, onProtectedNav, onEditProfile }) {
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuth()
   const menuRef = useRef(null)
@@ -15,16 +15,24 @@ export default function Sidebar({ onUpload, onSignup, onLogin, onProtectedNav, o
     function onPointer(event) {
       if (!menuRef.current?.contains(event.target)) setMenuOpen(false)
     }
-    document.addEventListener('mousedown', onPointer)
-    return () => document.removeEventListener('mousedown', onPointer)
+    document.addEventListener('pointerdown', onPointer)
+    return () => document.removeEventListener('pointerdown', onPointer)
   }, [])
+
+  useEffect(() => {
+    if (open) setMenuOpen(false)
+  }, [open])
 
   const yearLine = [profile?.grade, profile?.major].filter(Boolean).join(' · ')
 
+  function close() {
+    onClose?.()
+  }
+
   return (
-    <aside className="sidebar">
+    <aside id="mobile-nav" className={`sidebar${open ? ' is-open' : ''}`} tabIndex={-1}>
       <div className="brand">
-        <Link to="/" className="brand-name">
+        <Link to="/" className="brand-name" onClick={close}>
           Shortwave
         </Link>
         <div className="brand-tag">
@@ -46,6 +54,7 @@ export default function Sidebar({ onUpload, onSignup, onLogin, onProtectedNav, o
                 end={item.to === '/'}
                 className={({ isActive }) => `side-link${isActive ? ' is-active' : ''}`}
                 onClick={(event) => {
+                  close()
                   if (!PUBLIC_PATHS.includes(item.to) && !loggedIn) {
                     onProtectedNav(event, item.to)
                   }
@@ -62,7 +71,14 @@ export default function Sidebar({ onUpload, onSignup, onLogin, onProtectedNav, o
       <div className="side-foot">
         {loggedIn ? (
           <>
-            <button type="button" className="upload-solid" onClick={onUpload}>
+            <button
+              type="button"
+              className="upload-solid"
+              onClick={() => {
+                close()
+                onUpload()
+              }}
+            >
               <Icon name="plus" className="icon-dark" />
               Upload a film
             </button>
@@ -72,7 +88,7 @@ export default function Sidebar({ onUpload, onSignup, onLogin, onProtectedNav, o
                 className="side-user"
                 aria-label="Account menu"
                 aria-expanded={menuOpen}
-                onClick={() => setMenuOpen((open) => !open)}
+                onClick={() => setMenuOpen((openMenu) => !openMenu)}
               >
                 <span className="avatar-ring">
                   {profile.photoUrl ? <img src={profile.photoUrl} alt="" /> : initialsFromName(profile.name)}
@@ -93,6 +109,7 @@ export default function Sidebar({ onUpload, onSignup, onLogin, onProtectedNav, o
                     className="menu-item"
                     onClick={() => {
                       setMenuOpen(false)
+                      close()
                       onEditProfile()
                     }}
                   >
@@ -103,6 +120,7 @@ export default function Sidebar({ onUpload, onSignup, onLogin, onProtectedNav, o
                     className="menu-item"
                     onClick={() => {
                       setMenuOpen(false)
+                      close()
                       navigate('/projects')
                     }}
                   >
@@ -113,6 +131,7 @@ export default function Sidebar({ onUpload, onSignup, onLogin, onProtectedNav, o
                     className="menu-item"
                     onClick={() => {
                       setMenuOpen(false)
+                      close()
                       signOut()
                     }}
                   >
@@ -124,10 +143,24 @@ export default function Sidebar({ onUpload, onSignup, onLogin, onProtectedNav, o
           </>
         ) : user ? null : (
           <div className="side-auth">
-            <button type="button" className="upload-solid" onClick={onSignup}>
+            <button
+              type="button"
+              className="upload-solid"
+              onClick={() => {
+                close()
+                onSignup()
+              }}
+            >
               Sign up
             </button>
-            <button type="button" className="ghost-btn" onClick={onLogin}>
+            <button
+              type="button"
+              className="ghost-btn"
+              onClick={() => {
+                close()
+                onLogin()
+              }}
+            >
               Log in
             </button>
           </div>

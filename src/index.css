@@ -292,6 +292,15 @@ button {
   gap: 16px;
 }
 
+.mobile-topbar,
+.nav-overlay {
+  display: none;
+}
+
+.sidebar:focus {
+  outline: none;
+}
+
 .search {
   flex: 1;
   display: flex;
@@ -556,6 +565,10 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
     animation: none;
+  }
+
+  .sidebar {
+    transition: none;
   }
 }
 
@@ -2567,21 +2580,216 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .mobile-topbar {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 72;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 58px;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .mobile-topbar .brand {
+    padding: 0;
+    min-width: 0;
+  }
+
+  .mobile-topbar .brand-name {
+    font-size: 20px;
+  }
+
+  .mobile-topbar .brand-tag {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-menu-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    flex: none;
+  }
+
+  .mobile-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .nav-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    background: rgba(6, 6, 7, 0.62);
+    border: 0;
+    padding: 0;
+  }
+
   .sidebar {
+    display: flex;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 71;
+    width: min(320px, 88vw);
+    height: 100dvh;
+    padding: calc(70px + env(safe-area-inset-top, 0px)) 16px calc(18px + env(safe-area-inset-bottom, 0px));
+    border-right: none;
+    border-left: 1px solid var(--line);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translateX(100%);
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      transform 0.25s ease,
+      visibility 0.25s;
+  }
+
+  .sidebar.is-open {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+    box-shadow: -16px 0 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .sidebar .brand {
     display: none;
+  }
+
+  .side-link {
+    padding: 12px;
   }
 
   .shell {
     --shell-x: 16px;
-    padding: 14px var(--shell-x) 56px;
+    padding: 14px var(--shell-x) calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .home {
+    margin-top: 8px;
+    gap: 28px;
+  }
+
+  .home .empty-panel,
+  .empty-panel {
+    min-height: 240px;
+    padding: 32px 16px;
   }
 
   .hero {
     aspect-ratio: 16 / 11;
+    border-radius: 20px;
+    min-height: 220px;
+  }
+
+  .hero-shade {
+    background: linear-gradient(180deg, rgba(8, 8, 9, 0.12) 18%, rgba(8, 8, 9, 0.82) 100%);
+  }
+
+  .hero-live {
+    top: 12px;
+    left: 12px;
+  }
+
+  .hero-copy {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
   }
 
   .hero-copy h1 {
-    font-size: 36px;
+    font-size: clamp(28px, 8vw, 36px);
+  }
+
+  .hero-copy p {
+    font-size: 14px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .hero-row {
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .hero-watch,
+  .shot-play,
+  .player-watch {
+    height: 38px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
+
+  .shot-title {
+    font-size: 16px;
+  }
+
+  .page {
+    margin-top: 14px;
+  }
+
+  .page-head h1,
+  .page-head-sm h1 {
+    font-size: clamp(28px, 8vw, 36px);
+  }
+
+  .page-head-row .upload-solid,
+  .credit-banner .solid-btn,
+  .credit-banner .ghost-btn,
+  .invite-card .solid-btn,
+  .invite-card .ghost-btn {
+    width: 100%;
+  }
+
+  .project-title {
+    font-size: 18px;
+  }
+
+  .invite-card {
+    padding: 20px 16px;
+  }
+
+  .invite-card h1 {
+    font-size: 26px;
+  }
+
+  .search input,
+  .field input,
+  .field-row input,
+  .field-select,
+  .review-form textarea {
+    font-size: 16px;
+  }
+
+  .search {
+    height: 52px;
+  }
+
+  .filter-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .filter-menu {
+    width: min(300px, calc(100vw - 32px));
+  }
+
+  .search-suggest-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px 10px;
+    justify-items: start;
   }
 
   .feature-grid {
@@ -2605,7 +2813,11 @@ button {
   .project-row,
   .reorder-row,
   .upload-actions,
-  .fetch-result {
+  .fetch-result,
+  .field-row,
+  .player-top,
+  .upload-modal-foot,
+  .upload-modal-finish {
     flex-direction: column;
     align-items: stretch;
   }
@@ -2621,6 +2833,58 @@ button {
     text-align: left;
   }
 
+  .ghost-btn {
+    height: 44px;
+  }
+
+  .player-backdrop {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .player {
+    max-width: none;
+    border-radius: 0;
+    min-height: 100%;
+  }
+
+  .player-body {
+    padding: 18px 16px calc(28px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .player-title {
+    font-size: 28px;
+  }
+
+  .player-close {
+    width: 44px;
+    height: 44px;
+    top: max(10px, env(safe-area-inset-top, 0px));
+    right: 10px;
+  }
+
+  .player-actions {
+    flex-wrap: wrap;
+  }
+
+  .player-actions .ghost-btn {
+    flex: 1;
+  }
+
+  .rating-avg-value {
+    font-size: 40px;
+  }
+
+  .star-hit {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .review-form-btn {
+    height: 44px;
+    padding: 0 14px;
+  }
+
   .reviews {
     grid-template-columns: 1fr;
     row-gap: 16px;
@@ -2634,8 +2898,41 @@ button {
     flex-wrap: wrap;
   }
 
+  .upload-backdrop {
+    padding: 12px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .upload-modal {
+    border-radius: 20px;
+    padding: 16px;
+    max-height: 100dvh;
+  }
+
+  .upload-modal-copy {
+    margin: 16px 0 24px;
+  }
+
+  .upload-modal-copy h2 {
+    font-size: 26px;
+  }
+
+  .upload-modal-foot > .ghost-btn,
+  .upload-modal-foot > .solid-btn,
+  .upload-modal-finish,
+  .upload-modal-finish .ghost-btn,
+  .upload-modal-finish .solid-btn {
+    width: 100%;
+  }
+
   .skeleton-stat-value,
   .skeleton-stat-label {
     align-self: flex-start;
+  }
+}
+
+@media (hover: none) {
+  .shot-play {
+    opacity: 1;
+    transform: translate(-50%, -50%);
   }
 }

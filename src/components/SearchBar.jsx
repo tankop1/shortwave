@@ -14,6 +14,7 @@ export default function SearchBar({
   films,
 }) {
   const rootRef = useRef(null)
+  const inputRef = useRef(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [suggestOpen, setSuggestOpen] = useState(false)
   const [active, setActive] = useState(0)
@@ -44,16 +45,22 @@ export default function SearchBar({
         setSuggestOpen(false)
       }
     }
-    document.addEventListener('mousedown', onPointer)
-    return () => document.removeEventListener('mousedown', onPointer)
+    document.addEventListener('pointerdown', onPointer)
+    return () => document.removeEventListener('pointerdown', onPointer)
+  }, [])
+
+  useEffect(() => {
+    if (window.matchMedia('(pointer: fine)').matches) {
+      inputRef.current?.focus()
+    }
   }, [])
 
   return (
     <div className="search" ref={rootRef}>
       <Icon name="search" />
       <input
+        ref={inputRef}
         value={query}
-        autoFocus
         onChange={(event) => {
           setQuery(event.target.value)
           setActive(0)

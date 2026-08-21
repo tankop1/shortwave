@@ -8,6 +8,7 @@ const ICONS = {
   filter: 'https://img.icons8.com/?id=IseFhhYMuYmz&format=png&size=64',
   play: 'https://img.icons8.com/?id=EhGBqlGKPOmj&format=png&size=64',
   close: 'https://img.icons8.com/?id=vu5kHwGC4PNb&format=png&size=64',
+  menu: 'https://img.icons8.com/?id=3096&format=png&size=64',
   'add-image': 'https://img.icons8.com/?id=60628&format=png&size=64',
   share: 'https://img.icons8.com/?id=wAGXgZL0yrTF&format=png&size=64',
   sent: 'https://img.icons8.com/?id=gaBzN6YXx4ki&format=png&size=64',

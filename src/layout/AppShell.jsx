@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { collection, doc, getDoc, onSnapshot, query, updateDoc, where } from 'firebase/firestore'
 import Sidebar from '../components/Sidebar'
+import MobileTopbar from '../components/MobileTopbar'
 import Player from '../components/Player'
 import UploadModal from '../components/UploadModal'
 import AuthModal from '../components/AuthModal'
@@ -58,6 +59,7 @@ export default function AppShell() {
   const [linkedFilm, setLinkedFilm] = useState(null)
   const [featuredKey, setFeaturedKey] = useState(null)
   const [featuredReady, setFeaturedReady] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
 
   const uid = user?.uid || null
   const filmParam = filmIdFromSearch(location.search)
@@ -148,6 +150,38 @@ export default function AppShell() {
       setAuthMode('signup')
     }
   }, [user, loading, location.pathname, navigate, filmParam])
+
+  useEffect(() => {
+    setNavOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 860px)')
+    function onChange() {
+      if (!mq.matches) setNavOpen(false)
+    }
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
+  useEffect(() => {
+    if (!navOpen) return undefined
+    function onKey(event) {
+      if (event.key === 'Escape') setNavOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [navOpen])
+
+  useEffect(() => {
+    if (!navOpen) return
+    document.getElementById('mobile-nav')?.focus()
+  }, [navOpen])
 
   const catalog = useMemo(
     () => catalogRaw.filter(isCatalogVisible).sort(sortByCreated),
@@ -250,7 +284,18 @@ export default function AppShell() {
 
   return (
     <div className="app">
+      <MobileTopbar open={navOpen} onToggle={() => setNavOpen((open) => !open)} />
+      {navOpen && (
+        <button
+          type="button"
+          className="nav-overlay"
+          aria-label="Close menu"
+          onClick={() => setNavOpen(false)}
+        />
+      )}
       <Sidebar
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
         onUpload={() => openUpload()}
         onSignup={() => openAuth('signup')}
         onLogin={() => openAuth('login')}
