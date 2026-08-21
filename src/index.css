@@ -247,7 +247,10 @@ button {
 .avatar-ring {
   width: 36px;
   height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   border-radius: 50%;
+  overflow: hidden;
   display: grid;
   place-items: center;
   font-size: 12px;
@@ -257,6 +260,14 @@ button {
     0 0 0 2px var(--bg),
     0 0 0 4px var(--accent);
   flex: none;
+}
+
+.avatar-ring img {
+  display: block;
+  width: 36px;
+  height: 36px;
+  max-width: none;
+  object-fit: cover;
 }
 
 .shell {
@@ -445,23 +456,96 @@ button {
   margin-top: 22px;
 }
 
-.empty-hero {
-  padding: 72px 8px 24px;
-  max-width: 42ch;
+.home .empty-panel {
+  margin-top: 0;
+  min-height: 420px;
 }
 
-.empty-hero h1 {
-  margin: 0;
-  font-family: var(--display);
-  font-size: clamp(36px, 4vw, 52px);
-  font-weight: 800;
-  letter-spacing: -0.05em;
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
-.empty-hero p {
-  margin: 12px 0 0;
-  color: var(--mute);
-  font-size: 15px;
+.skeleton {
+  background-color: rgba(255, 255, 255, 0.04);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.1) 46%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.45s ease-in-out infinite;
+}
+
+.shot.skeleton,
+.hero.skeleton {
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.skeleton-text {
+  display: block;
+  border-radius: 8px;
+}
+
+.skeleton-row-title {
+  width: 148px;
+  height: 22px;
+}
+
+.skeleton-row-hint {
+  width: 56px;
+  height: 12px;
+}
+
+.skeleton-project-title {
+  width: min(220px, 52%);
+  height: 22px;
+}
+
+.skeleton-project-logline {
+  width: min(340px, 82%);
+  height: 14px;
+  margin-top: 10px;
+}
+
+.skeleton-project-btn {
+  width: 56px;
+  height: 32px;
+  margin-top: 14px;
+  border-radius: 999px;
+}
+
+.skeleton-stat-value,
+.skeleton-stat-label {
+  align-self: flex-end;
+}
+
+.skeleton-stat-value {
+  width: 40px;
+  height: 24px;
+}
+
+.skeleton-stat-label {
+  width: 72px;
+  height: 10px;
+}
+
+.search-page .skeleton-results-meta {
+  width: 72px;
+  height: 15px;
+  margin-top: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
 }
 
 .hero {
@@ -1329,6 +1413,64 @@ button {
   max-width: 460px;
 }
 
+.profile-modal {
+  max-width: 560px;
+}
+
+.profile-modal-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+  align-self: center;
+}
+
+.profile-modal .upload-fields {
+  margin-top: 22px;
+}
+
+.profile-photo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.profile-photo-btn {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--lift);
+  box-shadow: inset 0 0 0 1px var(--line);
+  flex: none;
+}
+
+.profile-photo-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-photo-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.profile-photo .field-help {
+  margin-top: 8px;
+}
+
+.auth-submit,
+
 .auth-submit,
 .auth-google {
   width: 100%;
@@ -2012,5 +2154,10 @@ button {
 
   .project-stats {
     text-align: left;
+  }
+
+  .skeleton-stat-value,
+  .skeleton-stat-label {
+    align-self: flex-start;
   }
 }

@@ -4,7 +4,7 @@ import Icon from './Icon'
 import { useAuth } from '../auth/AuthContext'
 import { NAV, PUBLIC_PATHS, initialsFromName } from '../data'
 
-export default function Sidebar({ onUpload, onSignup, onLogin, onProtectedNav }) {
+export default function Sidebar({ onUpload, onSignup, onLogin, onProtectedNav, onEditProfile }) {
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuth()
   const menuRef = useRef(null)
@@ -74,7 +74,9 @@ export default function Sidebar({ onUpload, onSignup, onLogin, onProtectedNav })
                 aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((open) => !open)}
               >
-                <span className="avatar-ring">{initialsFromName(profile.name)}</span>
+                <span className="avatar-ring">
+                  {profile.photoUrl ? <img src={profile.photoUrl} alt="" /> : initialsFromName(profile.name)}
+                </span>
                 <span className="side-user-copy">
                   <span className="side-user-name">{profile.name}</span>
                   {yearLine ? (
@@ -91,10 +93,10 @@ export default function Sidebar({ onUpload, onSignup, onLogin, onProtectedNav })
                     className="menu-item"
                     onClick={() => {
                       setMenuOpen(false)
-                      navigate('/portfolio')
+                      onEditProfile()
                     }}
                   >
-                    Portfolio settings
+                    Edit profile
                   </button>
                   <button
                     type="button"

@@ -8,15 +8,14 @@ import {
   updateDoc,
   doc,
 } from 'firebase/firestore'
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 import Icon from './Icon'
 import ThumbPicker from './ThumbPicker'
 import CrewCredits from './CrewCredits'
-import { db, storage } from '../firebase'
+import { db } from '../firebase'
 import { useAuth } from '../auth/AuthContext'
 import { COURSES, GENRES } from '../data'
 import { fetchVideoMeta } from '../lib/video'
-import { blobToDataUrl, compressImage } from '../lib/image'
+import { uploadImage } from '../lib/cloudinary'
 
 const STEPS = [
   {
@@ -55,16 +54,8 @@ function genresFromFilm(film) {
   return Object.fromEntries(list.map((item) => [item, true]))
 }
 
-async function persistPoster(userId, file) {
-  const blob = await compressImage(file)
-  try {
-    const fileRef = ref(storage, `thumbnails/${userId}/${Date.now()}.jpg`)
-    await uploadBytes(fileRef, blob, { contentType: 'image/jpeg' })
-    return await getDownloadURL(fileRef)
-  } catch {
-    const smaller = await compressImage(file, { maxWidth: 960, quality: 0.72 })
-    return blobToDataUrl(smaller)
-  }
+async function persistPoster(file) {
+  return uploadImage(file, 'thumbnail')
 }
 
 export default function UploadModal({ film, onClose }) {
@@ -182,7 +173,7 @@ export default function UploadModal({ film, onClose }) {
     const visibility = asDraft ? 'unlisted' : vis
     const status = asDraft ? 'draft' : vis === 'embargo' ? 'embargoed' : 'published'
     try {
-      const posterUrl = posterFile ? await persistPoster(user.uid, posterFile) : poster
+      const posterUrl = posterFile ? await persistPoster(posterFile) : poster
       const payload = {
         ownerId: user.uid,
         ownerName: profile.name,

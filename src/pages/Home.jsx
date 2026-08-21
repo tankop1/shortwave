@@ -2,9 +2,10 @@ import { useMemo } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import Icon from '../components/Icon'
 import FilmRow from '../components/FilmRow'
+import { HomeSkeleton } from '../components/Skeleton'
 
 export default function Home() {
-  const { films, byId, onOpen, profile, user } = useOutletContext()
+  const { films, catalogLoading, byId, onOpen, onUpload, profile, user } = useOutletContext()
   const featured = films[0] || null
   const week = films.slice(0, 4)
 
@@ -20,12 +21,23 @@ export default function Home() {
     return ids.map(byId).filter(Boolean)
   }, [profile, byId])
 
+  if (catalogLoading) {
+    return (
+      <main className="home" aria-busy="true">
+        <HomeSkeleton />
+      </main>
+    )
+  }
+
   if (!featured) {
     return (
       <main className="home">
-        <div className="empty-hero">
-          <h1>Nothing screening yet</h1>
-          <p>When someone publishes a film, it’ll land here.</p>
+        <div className="empty-panel">
+          <Icon name="clapper" className="empty-panel-graphic" />
+          <p>Nothing screening yet</p>
+          <button type="button" className="upload-solid" onClick={onUpload}>
+            Upload a film
+          </button>
         </div>
       </main>
     )

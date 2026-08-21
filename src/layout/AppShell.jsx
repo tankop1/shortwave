@@ -6,6 +6,7 @@ import Player from '../components/Player'
 import UploadModal from '../components/UploadModal'
 import AuthModal from '../components/AuthModal'
 import OnboardingModal from '../components/OnboardingModal'
+import ProfileModal from '../components/ProfileModal'
 import { useAuth } from '../auth/AuthContext'
 import { db } from '../firebase'
 import { PUBLIC_PATHS, decorateFilm, isCatalogVisible } from '../data'
@@ -25,12 +26,16 @@ export default function AppShell() {
   const navigate = useNavigate()
   const { user, profile, loading, needsOnboarding } = useAuth()
   const [authMode, setAuthMode] = useState(null)
+  const [profileOpen, setProfileOpen] = useState(false)
   const [uploadOpen, setUploadOpen] = useState(false)
   const [editFilm, setEditFilm] = useState(null)
   const [activeId, setActiveId] = useState(null)
   const [catalogRaw, setCatalogRaw] = useState([])
+  const [catalogReady, setCatalogReady] = useState(false)
   const [myRaw, setMyRaw] = useState([])
+  const [myReady, setMyReady] = useState(false)
   const [crewRaw, setCrewRaw] = useState([])
+  const [crewReady, setCrewReady] = useState(false)
 
   const uid = user?.uid || null
 
@@ -38,8 +43,14 @@ export default function AppShell() {
     const q = query(collection(db, 'films'), where('status', '==', 'published'))
     return onSnapshot(
       q,
-      (snap) => setCatalogRaw(docsToFilms(snap, uid)),
-      () => setCatalogRaw([]),
+      (snap) => {
+        setCatalogRaw(docsToFilms(snap, uid))
+        setCatalogReady(true)
+      },
+      () => {
+        setCatalogRaw([])
+        setCatalogReady(true)
+      },
     )
   }, [uid])
 
@@ -47,12 +58,36 @@ export default function AppShell() {
     if (!uid) {
       setMyRaw([])
       setCrewRaw([])
+      setMyReady(true)
+      setCrewReady(true)
       return undefined
     }
+    setMyReady(false)
+    setCrewReady(false)
     const mine = query(collection(db, 'films'), where('ownerId', '==', uid))
     const crewed = query(collection(db, 'films'), where('crewUids', 'array-contains', uid))
-    const unsubMine = onSnapshot(mine, (snap) => setMyRaw(docsToFilms(snap, uid)), () => setMyRaw([]))
-    const unsubCrew = onSnapshot(crewed, (snap) => setCrewRaw(docsToFilms(snap, uid)), () => setCrewRaw([]))
+    const unsubMine = onSnapshot(
+      mine,
+      (snap) => {
+        setMyRaw(docsToFilms(snap, uid))
+        setMyReady(true)
+      },
+      () => {
+        setMyRaw([])
+        setMyReady(true)
+      },
+    )
+    const unsubCrew = onSnapshot(
+      crewed,
+      (snap) => {
+        setCrewRaw(docsToFilms(snap, uid))
+        setCrewReady(true)
+      },
+      () => {
+        setCrewRaw([])
+        setCrewReady(true)
+      },
+    )
     return () => {
       unsubMine()
       unsubCrew()
@@ -128,13 +163,16 @@ export default function AppShell() {
         onSignup={() => openAuth('signup')}
         onLogin={() => openAuth('login')}
         onProtectedNav={requireAccount}
+        onEditProfile={() => setProfileOpen(true)}
       />
 
       <div className="shell">
         <Outlet
           context={{
             films: catalog,
+            catalogLoading: !catalogReady,
             myFilms,
+            libraryLoading: loading || Boolean(uid && (!myReady || !crewReady)),
             pendingCredits,
             byId,
             onOpen: setActiveId,
@@ -163,6 +201,7 @@ export default function AppShell() {
           onSwitch={setAuthMode}
         />
       )}
+      {profileOpen && !needsOnboarding && <ProfileModal onClose={() => setProfileOpen(false)} />}
       {needsOnboarding && <OnboardingModal />}
     </div>
   )

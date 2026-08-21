@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
 import { useOutletContext } from 'react-router-dom'
 import Icon from '../components/Icon'
+import { ProjectListSkeleton } from '../components/Skeleton'
 import { db } from '../firebase'
 import { statusKind, statusLabel } from '../data'
 
 export default function Projects() {
-  const { myFilms, pendingCredits, onUpload, onEdit, user } = useOutletContext()
+  const { myFilms, libraryLoading, pendingCredits, onUpload, onEdit, user } = useOutletContext()
   const [dismissed, setDismissed] = useState([])
 
   const pending = pendingCredits.filter((film) => !dismissed.includes(film.id))
@@ -23,6 +24,19 @@ export default function Projects() {
 
   function disputeCredit(film) {
     setDismissed((current) => [...current, film.id])
+  }
+
+  if (libraryLoading) {
+    return (
+      <main className="page projects-page" aria-busy="true">
+        <div className="page-head-row">
+          <div className="page-head page-head-sm">
+            <h1>My projects</h1>
+          </div>
+        </div>
+        <ProjectListSkeleton />
+      </main>
+    )
   }
 
   return (
