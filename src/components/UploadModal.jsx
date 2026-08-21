@@ -32,7 +32,7 @@ const STEPS = [
   {
     label: 'Info',
     title: 'Film info',
-    copy: 'Title, logline, genre, and course.',
+    copy: 'Title, logline, genre, course, and release date.',
   },
   {
     label: 'Crew',
@@ -53,6 +53,35 @@ function normalizeGenre(item) {
 function genresFromFilm(film) {
   const list = (film?.genres || (film?.genre ? [film.genre] : [])).map(normalizeGenre)
   return Object.fromEntries(list.map((item) => [item, true]))
+}
+
+const MONTHS = [
+  ['1', 'January'],
+  ['2', 'February'],
+  ['3', 'March'],
+  ['4', 'April'],
+  ['5', 'May'],
+  ['6', 'June'],
+  ['7', 'July'],
+  ['8', 'August'],
+  ['9', 'September'],
+  ['10', 'October'],
+  ['11', 'November'],
+  ['12', 'December'],
+]
+
+const RELEASE_YEARS = Array.from({ length: 16 }, (_, index) => String(new Date().getFullYear() - index))
+
+function releasedFromFilm(film) {
+  if (film?.releasedMonth && film?.releasedYear) {
+    return { month: String(film.releasedMonth), year: String(film.releasedYear) }
+  }
+  const created = film?.createdAt?.toDate?.()
+  if (created instanceof Date && !Number.isNaN(created.getTime())) {
+    return { month: String(created.getMonth() + 1), year: String(created.getFullYear()) }
+  }
+  if (film?.year) return { month: '', year: String(film.year) }
+  return { month: '', year: '' }
 }
 
 async function persistPoster(file) {
@@ -76,6 +105,8 @@ export default function UploadModal({ film, onClose }) {
   const [logline, setLogline] = useState(film?.logline || '')
   const [genres, setGenres] = useState(genresFromFilm(film))
   const [course, setCourse] = useState(film?.course || 'Not for a class')
+  const [releasedMonth, setReleasedMonth] = useState(() => releasedFromFilm(film).month)
+  const [releasedYear, setReleasedYear] = useState(() => releasedFromFilm(film).year)
   const [crew, setCrew] = useState(film?.crew || [])
   const [vis, setVis] = useState(film?.visibility === 'embargo' || film?.status === 'embargoed' ? 'embargo' : film?.visibility || 'public')
   const [embargoDate, setEmbargoDate] = useState(
@@ -185,6 +216,8 @@ export default function UploadModal({ film, onClose }) {
         logline: logline.trim(),
         genres: selectedGenres,
         course,
+        releasedMonth: releasedMonth ? Number(releasedMonth) : null,
+        releasedYear: releasedYear ? Number(releasedYear) : null,
         videoUrl,
         videoId,
         host,
@@ -371,20 +404,53 @@ export default function UploadModal({ film, onClose }) {
                   ))}
                 </div>
               </div>
-              <label className="field">
-                <span className="field-label">Course</span>
-                <select
-                  className="field-select"
-                  value={course}
-                  onChange={(event) => setCourse(event.target.value)}
-                >
-                  {courseOptions.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="form-split">
+                <label className="field">
+                  <span className="field-label">Course</span>
+                  <select
+                    className="field-select"
+                    value={course}
+                    onChange={(event) => setCourse(event.target.value)}
+                  >
+                    {courseOptions.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="field">
+                  <span className="field-label">Date released</span>
+                  <div className="release-split">
+                    <select
+                      className="field-select"
+                      value={releasedMonth}
+                      onChange={(event) => setReleasedMonth(event.target.value)}
+                      aria-label="Release month"
+                    >
+                      <option value="">Month</option>
+                      {MONTHS.map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      className="field-select"
+                      value={releasedYear}
+                      onChange={(event) => setReleasedYear(event.target.value)}
+                      aria-label="Release year"
+                    >
+                      <option value="">Year</option>
+                      {RELEASE_YEARS.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
             </>
           )}
 

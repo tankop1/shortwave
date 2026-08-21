@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { initialsFromName } from '../data'
 import { filmRating, formatAverage, subscribeReviews, upsertReview } from '../lib/reviews'
@@ -12,33 +12,54 @@ function firstName(name) {
 export default function FilmReviews({ film, onSignup }) {
   const { user, profile } = useAuth()
   const [reviews, setReviews] = useState([])
-  const [rating, setRating] = useState(0)
-  const [text, setText] = useState('')
+  const [draftRating, setDraftRating] = useState(0)
+  const [draftText, setDraftText] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [editing, setEditing] = useState(false)
   const [error, setError] = useState('')
+  const clicksReady = useRef(true)
+  const armTimer = useRef(0)
   const stats = filmRating(film)
   const mine = useMemo(
-    () => reviews.find((review) => review.userId === user?.uid) || null,
+    () => reviews.find((review) => review.userId === user?.uid || review.id === user?.uid) || null,
     [reviews, user?.uid],
   )
 
   useEffect(() => {
+    setIsEditing(false)
+    setDraftRating(0)
+    setDraftText('')
+    setError('')
     return subscribeReviews(film.id, setReviews)
   }, [film.id])
 
-  useEffect(() => {
-    setRating(mine?.rating || 0)
-    setText(mine?.text || '')
-    setError('')
-    setEditing(false)
-  }, [mine?.rating, mine?.text, film.id])
+  useEffect(() => () => window.clearTimeout(armTimer.current), [])
 
+  const composing = !mine || isEditing
+  const rating = composing ? draftRating : mine.rating
+  const text = composing ? draftText : mine.text || ''
   const maxBucket = Math.max(1, ...stats.buckets)
-  const composing = !mine || editing
+
+  function armClicks() {
+    clicksReady.current = false
+    window.clearTimeout(armTimer.current)
+    armTimer.current = window.setTimeout(() => {
+      clicksReady.current = true
+    }, 500)
+  }
+
+  function startEdit() {
+    if (!mine) return
+    setDraftRating(Number(mine.rating) || 0)
+    setDraftText(mine.text || '')
+    setError('')
+    setIsEditing(true)
+    armClicks()
+  }
 
   async function saveReview(event) {
     event.preventDefault()
+    if (!clicksReady.current) return
     if (!user) {
       onSignup?.()
       return
@@ -46,8 +67,8 @@ export default function FilmReviews({ film, onSignup }) {
     setSaving(true)
     setError('')
     try {
-      await upsertReview({ filmId: film.id, user, profile, rating, text })
-      setEditing(false)
+      await upsertReview({ filmId: film.id, user, profile, rating: draftRating, text: draftText })
+      setIsEditing(false)
     } catch (err) {
       setError(err.message || 'Couldn’t save that review.')
     } finally {
@@ -86,33 +107,43 @@ export default function FilmReviews({ film, onSignup }) {
         <form className="review-form" onSubmit={saveReview}>
           <div className="review-form-head">
             <h3 className="review-form-title">{mine ? 'Your review' : 'Leave a review'}</h3>
-            {composing ? (
-              <button type="submit" className="ghost-btn review-form-btn" disabled={saving || rating < 1}>
-                <Icon name="sent" />
-                Post review
-              </button>
-            ) : (
-              <button type="button" className="ghost-btn review-form-btn" onClick={() => setEditing(true)}>
+            {mine && !isEditing ? (
+              <button type="button" className="ghost-btn review-form-btn" onClick={startEdit}>
                 <Icon name="edit" />
                 Edit review
               </button>
-            )}
+            ) : null}
           </div>
           <StarRating
-            value={composing ? rating : mine.rating}
-            onChange={setRating}
+            value={rating}
+            onChange={(value) => {
+              if (!clicksReady.current) return
+              setDraftRating(value)
+              if (!isEditing && mine) setIsEditing(true)
+            }}
             readOnly={!composing}
           />
           {composing ? (
             <textarea
               value={text}
-              onChange={(event) => setText(event.target.value)}
+              onChange={(event) => setDraftText(event.target.value)}
               placeholder="Add an explanation (optional)"
               rows={3}
               maxLength={1200}
             />
           ) : mine.text ? (
             <p className="review-form-text">{mine.text}</p>
+          ) : null}
+          {composing ? (
+            <button
+              type="button"
+              className="ghost-btn review-form-btn review-form-submit"
+              disabled={saving || draftRating < 1}
+              onClick={saveReview}
+            >
+              <Icon name="sent" />
+              Post review
+            </button>
           ) : null}
           {error ? <p className="review-error">{error}</p> : null}
         </form>

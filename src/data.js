@@ -143,7 +143,11 @@ export function decorateFilm(film, uid) {
   const genre = Array.isArray(film.genres) ? film.genres[0] || '' : film.genre || ''
   const dur = film.durationLabel || film.dur || ''
   const created = film.createdAt?.toDate?.() instanceof Date ? film.createdAt.toDate() : null
-  const year = created ? String(created.getFullYear()) : film.year || ''
+  const year = film.releasedYear
+    ? String(film.releasedYear)
+    : created
+      ? String(created.getFullYear())
+      : film.year || ''
   const crew = film.crew || []
   const credits = crew
     .filter((member) => member.state !== 'invited')
@@ -220,16 +224,14 @@ export function isCatalogVisible(film) {
 
 export function statusLabel(film) {
   if (film.status === 'draft') return 'Draft'
-  if (film.status === 'embargoed') {
-    const date = film.embargoUntil?.toDate?.()
-    if (!date) return 'Embargoed'
-    return `Embargoed · lifts ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-  }
-  return 'Published'
+  if (film.status === 'embargoed' || film.visibility === 'embargo') return 'Embargoed'
+  if (film.visibility === 'unlisted') return 'Unlisted'
+  return 'Public'
 }
 
 export function statusKind(film) {
   if (film.status === 'draft') return 'draft'
-  if (film.status === 'embargoed') return 'embargo'
+  if (film.status === 'embargoed' || film.visibility === 'embargo') return 'embargo'
+  if (film.visibility === 'unlisted') return 'unlisted'
   return 'live'
 }
