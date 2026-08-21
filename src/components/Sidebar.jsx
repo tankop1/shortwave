@@ -3,12 +3,14 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import Icon from './Icon'
 import { useAuth } from '../auth/AuthContext'
 import { NAV, PUBLIC_PATHS, initialsFromName } from '../data'
+import { subscribeMessages } from '../lib/messages'
 
 export default function Sidebar({ open = false, onClose, onUpload, onSignup, onLogin, onProtectedNav, onEditProfile }) {
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuth()
   const menuRef = useRef(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [unread, setUnread] = useState(0)
   const loggedIn = Boolean(user && profile?.onboarded)
 
   useEffect(() => {
@@ -24,6 +26,16 @@ export default function Sidebar({ open = false, onClose, onUpload, onSignup, onL
   }, [open])
 
   const yearLine = [profile?.grade, profile?.major].filter(Boolean).join(' · ')
+
+  useEffect(() => {
+    if (!user?.uid || !loggedIn) {
+      setUnread(0)
+      return undefined
+    }
+    return subscribeMessages(user.uid, (messages) => {
+      setUnread(messages.filter((item) => !item.read).length)
+    })
+  }, [user?.uid, loggedIn])
 
   function close() {
     onClose?.()
@@ -62,6 +74,9 @@ export default function Sidebar({ open = false, onClose, onUpload, onSignup, onL
               >
                 <Icon name={item.icon} />
                 {item.label}
+                {item.id === 'inbox' && unread > 0 ? (
+                  <span className="nav-badge">{unread > 9 ? '9+' : unread}</span>
+                ) : null}
               </NavLink>
             ))}
           </div>

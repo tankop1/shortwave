@@ -29,3 +29,26 @@ export async function uploadImage(file, kind, { maxWidth = 1280 } = {}) {
   }
   return data.secure_url
 }
+
+export async function uploadVideo(file) {
+  const preset = PRESETS.thumbnail
+  if (!CLOUD_NAME || !preset) {
+    throw new Error(
+      'Cloudinary isn’t configured. Add VITE_CLOUDINARY_CLOUD_NAME and the upload presets to .env.',
+    )
+  }
+
+  const body = new FormData()
+  body.append('file', file)
+  body.append('upload_preset', preset)
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`, {
+    method: 'POST',
+    body,
+  })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(data.error?.message || 'Couldn’t upload that video. Try a YouTube or Vimeo link instead.')
+  }
+  return data.secure_url
+}

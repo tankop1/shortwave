@@ -14,6 +14,10 @@ const ICONS = {
   sent: 'https://img.icons8.com/?id=gaBzN6YXx4ki&format=png&size=64',
   edit: 'https://img.icons8.com/?id=pzpApVcbIOwm&format=png&size=64',
   eye: 'https://img.icons8.com/?id=fhXWXkFdxrRk&format=png&size=64',
+  inbox: 'https://img.icons8.com/?id=100835&format=png&size=64',
+  palette: 'https://img.icons8.com/?id=102595&format=png&size=64',
+  'chevron-left': 'https://img.icons8.com/?id=40024&format=png&size=64',
+  'chevron-right': 'https://img.icons8.com/?id=40022&format=png&size=64',
 }
 
 export default function Icon({ name, className = '' }) {

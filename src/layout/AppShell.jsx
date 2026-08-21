@@ -10,8 +10,8 @@ import OnboardingModal from '../components/OnboardingModal'
 import ProfileModal from '../components/ProfileModal'
 import { useAuth } from '../auth/AuthContext'
 import { db } from '../firebase'
-import { decorateFilm, isCatalogVisible, isPublicPath } from '../data'
-import { filmIdFromSearch } from '../lib/share'
+import { decorateFilm, isCatalogVisible, isPortfolioPublicPath, isPublicPath } from '../data'
+import { filmIdFromSearch, wantsSignup } from '../lib/share'
 import { parseVideoUrl } from '../lib/video'
 
 function sortByCreated(a, b) {
@@ -63,6 +63,8 @@ export default function AppShell() {
 
   const uid = user?.uid || null
   const filmParam = filmIdFromSearch(location.search)
+  const signupParam = wantsSignup(location.search)
+  const bare = isPortfolioPublicPath(location.pathname)
 
   useEffect(() => {
     return onSnapshot(
@@ -150,6 +152,18 @@ export default function AppShell() {
       setAuthMode('signup')
     }
   }, [user, loading, location.pathname, navigate, filmParam])
+
+  useEffect(() => {
+    if (loading || !signupParam) return
+    if (!user) setAuthMode('signup')
+    const params = new URLSearchParams(location.search)
+    params.delete('signup')
+    const search = params.toString()
+    navigate(
+      { pathname: '/', search: search ? `?${search}` : '' },
+      { replace: true },
+    )
+  }, [loading, signupParam, user, location.search, navigate])
 
   useEffect(() => {
     setNavOpen(false)
@@ -283,9 +297,9 @@ export default function AppShell() {
   }
 
   return (
-    <div className="app">
-      <MobileTopbar open={navOpen} onToggle={() => setNavOpen((open) => !open)} />
-      {navOpen && (
+    <div className={bare ? 'app is-bare' : 'app'}>
+      {!bare && <MobileTopbar open={navOpen} onToggle={() => setNavOpen((open) => !open)} />}
+      {!bare && navOpen && (
         <button
           type="button"
           className="nav-overlay"
@@ -293,17 +307,19 @@ export default function AppShell() {
           onClick={() => setNavOpen(false)}
         />
       )}
-      <Sidebar
-        open={navOpen}
-        onClose={() => setNavOpen(false)}
-        onUpload={() => openUpload()}
-        onSignup={() => openAuth('signup')}
-        onLogin={() => openAuth('login')}
-        onProtectedNav={requireAccount}
-        onEditProfile={() => setProfileOpen(true)}
-      />
+      {!bare && (
+        <Sidebar
+          open={navOpen}
+          onClose={() => setNavOpen(false)}
+          onUpload={() => openUpload()}
+          onSignup={() => openAuth('signup')}
+          onLogin={() => openAuth('login')}
+          onProtectedNav={requireAccount}
+          onEditProfile={() => setProfileOpen(true)}
+        />
+      )}
 
-      <div className="shell">
+      <div className={bare ? 'shell shell-bare' : 'shell'}>
         <Outlet
           context={{
             films: catalog,
@@ -342,8 +358,8 @@ export default function AppShell() {
           onSwitch={setAuthMode}
         />
       )}
-      {profileOpen && !needsOnboarding && <ProfileModal onClose={() => setProfileOpen(false)} />}
-      {needsOnboarding && <OnboardingModal />}
+      {profileOpen && !needsOnboarding && !bare && <ProfileModal onClose={() => setProfileOpen(false)} />}
+      {needsOnboarding && !bare && <OnboardingModal />}
     </div>
   )
 }

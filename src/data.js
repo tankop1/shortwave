@@ -77,6 +77,7 @@ export const NAV = [
     items: [
       { id: 'projects', label: 'My Projects', icon: 'folder', to: '/projects' },
       { id: 'portfolio', label: 'Portfolio Site', icon: 'clapper', to: '/portfolio' },
+      { id: 'inbox', label: 'Inbox', icon: 'inbox', to: '/inbox' },
       { id: 'saved', label: 'Your list', icon: 'heart', to: '/list' },
     ],
   },
@@ -84,8 +85,36 @@ export const NAV = [
 
 export const PUBLIC_PATHS = ['/', '/search', '/invite']
 
+export const RESERVED_PATHS = new Set([
+  '',
+  'search',
+  'projects',
+  'portfolio',
+  'invite',
+  'list',
+  'inbox',
+  'admin',
+  'login',
+  'signup',
+  'api',
+  'assets',
+  'static',
+  'home',
+  'settings',
+  'profile',
+])
+
+export function isPortfolioPublicPath(pathname) {
+  const parts = pathname.split('/').filter(Boolean)
+  if (parts.length !== 1) return false
+  return !RESERVED_PATHS.has(parts[0].toLowerCase())
+}
+
 export function isPublicPath(pathname) {
-  return PUBLIC_PATHS.some((path) => pathname === path || (path !== '/' && pathname.startsWith(`${path}/`)))
+  if (PUBLIC_PATHS.some((path) => pathname === path || (path !== '/' && pathname.startsWith(`${path}/`)))) {
+    return true
+  }
+  return isPortfolioPublicPath(pathname)
 }
 
 export function roleChip(role) {

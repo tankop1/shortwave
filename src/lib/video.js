@@ -36,12 +36,20 @@ export function youtubePoster(id) {
   return `https://img.youtube.com/vi/${id}/hqdefault.jpg`
 }
 
-export function embedUrl(film) {
+export function embedUrl(film, { autoplay = true, mute = false, loop = false } = {}) {
   if (film.host === 'youtube' && film.videoId) {
-    return `https://www.youtube.com/embed/${film.videoId}?autoplay=1&rel=0`
+    const params = ['rel=0']
+    if (autoplay) params.push('autoplay=1')
+    if (mute) params.push('mute=1')
+    if (loop) params.push(`loop=1`, `playlist=${film.videoId}`)
+    return `https://www.youtube.com/embed/${film.videoId}?${params.join('&')}`
   }
   if (film.host === 'vimeo' && film.videoId) {
-    return `https://player.vimeo.com/video/${film.videoId}?autoplay=1`
+    const params = []
+    if (autoplay) params.push('autoplay=1')
+    if (mute) params.push('muted=1')
+    if (loop) params.push('loop=1')
+    return `https://player.vimeo.com/video/${film.videoId}${params.length ? `?${params.join('&')}` : ''}`
   }
   return null
 }

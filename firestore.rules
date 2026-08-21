@@ -13,6 +13,33 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if isOwner(userId);
       allow delete: if false;
+
+      match /messages/{messageId} {
+        allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'message', 'createdAt', 'read'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 120
+          && request.resource.data.email is string
+          && request.resource.data.email.size() > 3
+          && request.resource.data.email.size() <= 200
+          && request.resource.data.message is string
+          && request.resource.data.message.size() > 0
+          && request.resource.data.message.size() <= 4000
+          && request.resource.data.read == false
+          && request.resource.data.createdAt == request.time;
+        allow read, update, delete: if isOwner(userId);
+      }
+    }
+
+    match /portfolioSlugs/{slug} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'updatedAt']);
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
     }
 
     match /films/{filmId} {
