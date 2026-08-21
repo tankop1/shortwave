@@ -118,7 +118,7 @@ export function initialsFromName(name = '') {
 }
 
 export function isUtEmail(value) {
-  return /@(utexas\.edu|austin\.utexas\.edu)$/i.test(value.trim())
+  return /@(utexas\.edu|austin\.utexas\.edu|my\.utexas\.edu|eid\.utexas\.edu)$/i.test(value.trim())
 }
 
 export function durationMinutes(dur) {

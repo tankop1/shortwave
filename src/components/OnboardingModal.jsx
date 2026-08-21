@@ -125,7 +125,9 @@ export default function OnboardingModal() {
                 placeholder="name@utexas.edu"
                 autoFocus
               />
-              <span className="field-help">Must end in @utexas.edu or @austin.utexas.edu.</span>
+              <span className="field-help">
+                Must end in @utexas.edu, @austin.utexas.edu, @my.utexas.edu, or @eid.utexas.edu.
+              </span>
             </label>
           )}
 
