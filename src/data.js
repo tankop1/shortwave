@@ -56,6 +56,9 @@ export const COURSES = [
   'Class (Pre-Thesis)',
   'Class (Thesis)',
   'Class (Cinematography)',
+  'Class (East Austin Stories)',
+  'Class (Queer Media Production)',
+  'Class (Directing Workshop)',
   'Class (other)',
 ]
 export const DURATIONS = ['<5', '5–10', '10–20', '20+']
@@ -82,7 +85,11 @@ export const NAV = [
   },
 ]
 
-export const PUBLIC_PATHS = ['/', '/search']
+export const PUBLIC_PATHS = ['/', '/search', '/invite']
+
+export function isPublicPath(pathname) {
+  return PUBLIC_PATHS.some((path) => pathname === path || (path !== '/' && pathname.startsWith(`${path}/`)))
+}
 
 export function roleChip(role) {
   const h = ROLE_HUES[role] ?? 40
@@ -141,13 +148,15 @@ export function decorateFilm(film, uid) {
   const created = film.createdAt?.toDate?.() instanceof Date ? film.createdAt.toDate() : null
   const year = created ? String(created.getFullYear()) : film.year || ''
   const crew = film.crew || []
-  const credits = crew.map((member) => ({
-    name: member.name,
-    role: member.role,
-    state: member.state,
-    stripe: avatar(ROLE_HUES[member.role] ?? 40),
-    ...roleChip(member.role),
-  }))
+  const credits = crew
+    .filter((member) => member.state !== 'invited')
+    .map((member) => ({
+      name: member.name,
+      role: member.role,
+      state: member.state,
+      stripe: avatar(ROLE_HUES[member.role] ?? 40),
+      ...roleChip(member.role),
+    }))
   const yourCredit = uid ? crew.find((member) => member.userId === uid) : null
 
   return {

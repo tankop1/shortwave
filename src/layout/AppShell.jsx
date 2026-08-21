@@ -9,7 +9,7 @@ import OnboardingModal from '../components/OnboardingModal'
 import ProfileModal from '../components/ProfileModal'
 import { useAuth } from '../auth/AuthContext'
 import { db } from '../firebase'
-import { PUBLIC_PATHS, decorateFilm, isCatalogVisible } from '../data'
+import { decorateFilm, isCatalogVisible, isPublicPath } from '../data'
 
 function sortByCreated(a, b) {
   const av = a.createdAt?.toMillis?.() || 0
@@ -105,7 +105,7 @@ export default function AppShell() {
 
   useEffect(() => {
     if (loading) return
-    if (!user && !PUBLIC_PATHS.includes(location.pathname)) {
+    if (!user && !isPublicPath(location.pathname)) {
       navigate('/', { replace: true })
       setAuthMode('signup')
     }
@@ -178,6 +178,8 @@ export default function AppShell() {
             onOpen: setActiveId,
             onUpload: () => openUpload(),
             onEdit: (film) => openUpload(film),
+            onSignup: () => openAuth('signup'),
+            onLogin: () => openAuth('login'),
             user,
             profile,
           }}

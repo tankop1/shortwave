@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react'
-import { collection, getDocs, limit, query, where } from 'firebase/firestore'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { collection, getDocs, limit, query } from 'firebase/firestore'
 import Icon from './Icon'
 import { db } from '../firebase'
 import { CREW_ROLES, avatar, hueFromName, roleChip } from '../data'
+import { isValidEmail, newInviteToken, rankPeople } from '../lib/invites'
 
 function memberKind(member) {
   if (member.kind === 'cast' || member.kind === 'crew') return member.kind
   return CREW_ROLES.includes(member.role) ? 'crew' : 'cast'
 }
 
-export default function CrewCredits({ crew, setCrew, user }) {
+export default function CrewCredits({ crew, setCrew, user, profile }) {
   const [kind, setKind] = useState(null)
 
   const cast = crew.filter((member) => memberKind(member) === 'cast')
@@ -72,6 +73,7 @@ export default function CrewCredits({ crew, setCrew, user }) {
           kind={kind}
           crew={crew}
           user={user}
+          profile={profile}
           onClose={() => setKind(null)}
           onAdd={(member) => {
             setCrew((current) => [...current, member])
@@ -87,7 +89,7 @@ function CreditRow({ person, onRemove }) {
   const chip = roleChip(person.role)
   return (
     <div className="credit-board-row">
-      <span className="credit-avatar" style={{ background: avatar(person.hue || hueFromName(person.name)) }} />
+      <PersonAvatar person={person} />
       <span className="credit-board-name">{person.name}</span>
       <span className="credit-role" style={{ color: chip.color }}>
         {person.role}
@@ -100,62 +102,147 @@ function CreditRow({ person, onRemove }) {
   )
 }
 
-function CreditDialog({ kind, crew, user, onClose, onAdd }) {
+function PersonAvatar({ person }) {
+  if (person.photoUrl) {
+    return <img className="credit-avatar" src={person.photoUrl} alt="" />
+  }
+  return (
+    <span
+      className="credit-avatar"
+      style={{ background: avatar(person.hue || hueFromName(person.name)) }}
+    />
+  )
+}
+
+function CreditDialog({ kind, crew, user, profile, onClose, onAdd }) {
   const isCast = kind === 'cast'
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [position, setPosition] = useState(isCast ? '' : '')
+  const [position, setPosition] = useState('')
   const [otherRole, setOtherRole] = useState('')
   const [picked, setPicked] = useState(null)
-  const [people, setPeople] = useState([])
+  const [inviteMode, setInviteMode] = useState(false)
+  const [directory, setDirectory] = useState([])
+  const [directoryReady, setDirectoryReady] = useState(false)
+  const [suggestOpen, setSuggestOpen] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(0)
+  const blurTimer = useRef(0)
+  const emailRef = useRef(null)
 
   useEffect(() => {
     function onKey(event) {
       if (event.key !== 'Escape') return
       event.preventDefault()
+      if (suggestOpen) {
+        setSuggestOpen(false)
+        return
+      }
       onClose()
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, suggestOpen])
 
   useEffect(() => {
-    const q = name.trim().toLowerCase()
-    if (picked || q.length < 2 || q.includes('@')) {
-      setPeople([])
-      return undefined
-    }
-    const peopleQuery = query(
-      collection(db, 'users'),
-      where('nameLower', '>=', q),
-      where('nameLower', '<=', `${q}\uf8ff`),
-      limit(6),
-    )
-    getDocs(peopleQuery)
+    let cancelled = false
+    getDocs(query(collection(db, 'users'), limit(1000)))
       .then((snap) => {
-        setPeople(
-          snap.docs
-            .map((item) => ({ id: item.id, ...item.data() }))
-            .filter((person) => person.id !== user?.uid)
-            .filter((person) => !crew.some((member) => member.userId === person.id)),
-        )
+        if (cancelled) return
+        const people = snap.docs.map((item) => ({ id: item.id, ...item.data() }))
+        if (user?.uid && profile?.name && !people.some((person) => person.id === user.uid)) {
+          people.unshift({
+            id: user.uid,
+            name: profile.name,
+            nameLower: profile.name.trim().toLowerCase(),
+            email: profile.email || user.email,
+            utEmail: profile.utEmail,
+            roles: profile.roles,
+            photoUrl: profile.photoUrl,
+          })
+        }
+        setDirectory(people)
       })
-      .catch(() => setPeople([]))
-    return undefined
-  }, [name, picked, crew, user])
+      .catch(() => {
+        if (!cancelled) setDirectory([])
+      })
+      .finally(() => {
+        if (!cancelled) setDirectoryReady(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [profile, user])
+
+  const matches = useMemo(() => {
+    const q = name.trim()
+    if (picked || !q) return []
+    return rankPeople(directory, q)
+      .filter((person) => !crew.some((member) => member.userId === person.id))
+      .slice(0, 8)
+  }, [crew, directory, name, picked])
+
+  const typedName = name.trim()
+  const noUserMatch = directoryReady && typedName.length > 0 && matches.length === 0 && !picked
+  const showEmail = !picked && (inviteMode || noUserMatch || typedName.includes('@'))
+  const showSuggest = suggestOpen && !picked && typedName.length > 0
+  const inviteOptionIndex = matches.length
+  const optionCount = matches.length + 1
 
   const roleValue = position === 'Other' ? otherRole.trim() : position.trim()
-  const inviteEmail = picked ? '' : email.trim() || (name.includes('@') ? name.trim() : '')
-  const displayName = picked?.name || (name.includes('@') ? name.split('@')[0] : name.trim())
+  const inviteEmail = picked ? '' : email.trim() || (typedName.includes('@') ? typedName : '')
+  const displayName = picked?.name || (typedName.includes('@') ? typedName.split('@')[0] : typedName)
   const canSave = Boolean(
-    displayName && (picked || inviteEmail.includes('@')) && (isCast || roleValue),
+    displayName &&
+      (isCast || roleValue) &&
+      (picked || ((inviteMode || noUserMatch || typedName.includes('@')) && isValidEmail(inviteEmail))),
   )
 
   function pickPerson(person) {
     setPicked(person)
     setName(person.name)
     setEmail('')
-    setPeople([])
+    setInviteMode(false)
+    setSuggestOpen(false)
+  }
+
+  function startInvite() {
+    setPicked(null)
+    setInviteMode(true)
+    setSuggestOpen(false)
+    if (typedName.includes('@')) setEmail(typedName)
+    window.setTimeout(() => emailRef.current?.focus(), 0)
+  }
+
+  function onNameChange(value) {
+    setName(value)
+    setPicked(null)
+    setSuggestOpen(true)
+    setActiveIndex(0)
+    if (value.includes('@')) {
+      setInviteMode(true)
+      setEmail(value.trim())
+      return
+    }
+    if (inviteMode) return
+    setInviteMode(false)
+  }
+
+  function onNameKeyDown(event) {
+    if (!showSuggest) {
+      if (event.key === 'ArrowDown' && typedName) setSuggestOpen(true)
+      return
+    }
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      setActiveIndex((current) => (current + 1) % optionCount)
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      setActiveIndex((current) => (current - 1 + optionCount) % optionCount)
+    } else if (event.key === 'Enter') {
+      event.preventDefault()
+      if (activeIndex >= matches.length) startInvite()
+      else if (matches[activeIndex]) pickPerson(matches[activeIndex])
+    }
   }
 
   function save() {
@@ -164,9 +251,11 @@ function CreditDialog({ kind, crew, user, onClose, onAdd }) {
       name: displayName,
       role: isCast ? roleValue || 'Cast' : roleValue,
       kind,
-      state: picked ? 'pending' : 'invited',
+      state: picked ? (picked.id === user?.uid ? 'accepted' : 'pending') : 'invited',
       userId: picked?.id || null,
-      email: picked ? picked.email || null : inviteEmail,
+      email: picked ? picked.email || picked.utEmail || null : inviteEmail,
+      photoUrl: picked?.photoUrl || null,
+      inviteToken: picked ? null : newInviteToken(),
       hue: hueFromName(displayName),
     })
   }
@@ -186,49 +275,92 @@ function CreditDialog({ kind, crew, user, onClose, onAdd }) {
             <Icon name="close" />
           </button>
         </div>
-        <label className="field">
+        <div className="field">
           <span className="field-label">Name</span>
-          <input
-            value={name}
-            onChange={(event) => {
-              const value = event.target.value
-              setName(value)
-              setPicked(null)
-              if (value.includes('@')) setEmail(value.trim())
-            }}
-            placeholder="Search a student…"
-            autoFocus
-          />
-          {people.length > 0 && (
-            <div className="suggest-list">
-              {people.map((person) => (
-                <button
-                  key={person.id}
-                  type="button"
-                  className="suggest-item"
-                  onClick={() => pickPerson(person)}
-                >
-                  <span className="credit-avatar" style={{ background: avatar(hueFromName(person.name)) }} />
-                  <span>{person.name}</span>
-                  <span className="suggest-hint">{(person.roles || []).join(' · ')}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="suggest-wrap">
+            <input
+              value={name}
+              onChange={(event) => onNameChange(event.target.value)}
+              onFocus={() => typedName && setSuggestOpen(true)}
+              onBlur={() => {
+                window.clearTimeout(blurTimer.current)
+                blurTimer.current = window.setTimeout(() => setSuggestOpen(false), 160)
+              }}
+              onKeyDown={onNameKeyDown}
+              placeholder="Search everyone on Shortwave…"
+              autoComplete="off"
+              autoFocus
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={showSuggest}
+              aria-controls="credit-name-suggest"
+            />
+            {showSuggest && (
+              <div className="suggest-list" id="credit-name-suggest" role="listbox">
+                {!directoryReady && (
+                  <div className="suggest-empty">Searching students…</div>
+                )}
+                {directoryReady &&
+                  matches.map((person, index) => (
+                    <button
+                      key={person.id}
+                      type="button"
+                      role="option"
+                      aria-selected={index === activeIndex}
+                      className={`suggest-item${index === activeIndex ? ' is-active' : ''}`}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => pickPerson(person)}
+                    >
+                      <PersonAvatar person={person} />
+                      <span>{person.name}</span>
+                      <span className="suggest-hint">
+                        {person.id === user?.uid ? 'You' : (person.roles || []).join(' · ')}
+                      </span>
+                    </button>
+                  ))}
+                {directoryReady && typedName && (
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={activeIndex === inviteOptionIndex}
+                    className={`suggest-item suggest-invite${activeIndex === inviteOptionIndex ? ' is-active' : ''}`}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={startInvite}
+                  >
+                    <span className="suggest-invite-icon">
+                      <Icon name="plus" />
+                    </span>
+                    <span>
+                      Invite <em>{typedName.includes('@') ? typedName.split('@')[0] : typedName}</em>
+                    </span>
+                    <span className="suggest-hint">Email them a credit</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           {picked ? (
-            <p className="field-help">Matched to their Shortwave account. They’ll confirm this credit.</p>
+            <p className="field-help">
+              {picked.id === user?.uid
+                ? 'That’s you. This credit will show as accepted.'
+                : 'Matched to their Shortwave account. They’ll confirm this credit.'}
+            </p>
+          ) : showEmail ? (
+            <p className="field-help">They’re not on Shortwave yet. Add an email and we’ll invite them when you publish.</p>
           ) : (
-            <p className="field-help">If they’re not on Shortwave yet, add their email below to invite them.</p>
+            <p className="field-help">Search the directory, or invite someone who isn’t on Shortwave yet.</p>
           )}
-        </label>
-        {!picked && (
+        </div>
+        {showEmail && (
           <label className="field">
             <span className="field-label">Email</span>
             <input
+              ref={emailRef}
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="name@utexas.edu"
+              required
             />
           </label>
         )}

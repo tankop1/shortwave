@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { serverTimestamp } from 'firebase/firestore'
 import { useAuth } from '../auth/AuthContext'
 import { GRADES, HEARD_ABOUT, ROLES, isUtEmail } from '../data'
+import { INVITE_STORAGE_KEY } from '../lib/invites'
 
 const STEPS = [
   {
@@ -71,7 +72,8 @@ export default function OnboardingModal() {
         savedFilmIds: [],
         createdAt: serverTimestamp(),
       })
-      navigate('/projects')
+      const inviteToken = sessionStorage.getItem(INVITE_STORAGE_KEY)
+      navigate(inviteToken ? `/invite/${inviteToken}` : '/projects')
     } catch (err) {
       setError(err.message || 'Couldn’t save your profile.')
       setBusy(false)

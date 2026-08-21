@@ -16,6 +16,7 @@ import { useAuth } from '../auth/AuthContext'
 import { COURSES, GENRES } from '../data'
 import { fetchVideoMeta } from '../lib/video'
 import { uploadImage } from '../lib/cloudinary'
+import { upsertCreditInvites, sendFilmCreditInvites } from '../lib/invites'
 
 const STEPS = [
   {
@@ -82,6 +83,7 @@ export default function UploadModal({ film, onClose }) {
   )
   const [fetchError, setFetchError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [farthest, setFarthest] = useState(film?.id ? STEPS.length - 1 : 0)
   const current = STEPS[step]
   const invitedCount = crew.filter((person) => person.state === 'invited').length
   const courseOptions = COURSES.includes(course) || !course ? COURSES : [...COURSES, course]
@@ -154,7 +156,9 @@ export default function UploadModal({ film, onClose }) {
       if (!ok) return
     }
     if (!canAdvance()) return
-    setStep((currentStep) => Math.min(currentStep + 1, STEPS.length - 1))
+    const next = Math.min(step + 1, STEPS.length - 1)
+    setStep(next)
+    setFarthest((max) => Math.max(max, next))
   }
 
   function toggleGenre(label) {
@@ -197,18 +201,35 @@ export default function UploadModal({ film, onClose }) {
           state: member.state,
           userId: member.userId || null,
           email: member.email || null,
+          inviteToken: member.inviteToken || null,
+          inviteSentAt: member.inviteSentAt || null,
         })),
         crewUids: crew.map((member) => member.userId).filter(Boolean),
         views30d: film?.views30d || 0,
         updatedAt: serverTimestamp(),
       }
-      if (film?.id) {
-        await updateDoc(doc(db, 'films', film.id), payload)
+      let filmId = film?.id
+      if (filmId) {
+        await updateDoc(doc(db, 'films', filmId), payload)
       } else {
-        await addDoc(collection(db, 'films'), {
+        const created = await addDoc(collection(db, 'films'), {
           ...payload,
           createdAt: serverTimestamp(),
         })
+        filmId = created.id
+      }
+      await upsertCreditInvites({
+        filmId,
+        title: payload.title,
+        poster: posterUrl,
+        logline: payload.logline,
+        visibility,
+        ownerId: user.uid,
+        ownerName: profile.name,
+        crew: payload.crew,
+      })
+      if (status === 'published' && payload.crew.some((member) => member.state === 'invited' && member.email)) {
+        await sendFilmCreditInvites(filmId)
       }
       onClose()
       navigate('/projects')
@@ -233,9 +254,10 @@ export default function UploadModal({ film, onClose }) {
               <button
                 key={item.label}
                 type="button"
-                className={`upload-step${index === step ? ' is-on' : ''}${index < step ? ' is-done' : ''}`}
+                className={`upload-step${index === step ? ' is-on' : ''}${index !== step && index <= farthest ? ' is-done' : ''}`}
+                disabled={index > farthest}
                 onClick={() => {
-                  if (index <= step) setStep(index)
+                  if (index <= farthest) setStep(index)
                 }}
               >
                 <span>{index + 1}</span>
@@ -365,7 +387,7 @@ export default function UploadModal({ film, onClose }) {
             </>
           )}
 
-          {step === 3 && <CrewCredits crew={crew} setCrew={setCrew} user={user} />}
+          {step === 3 && <CrewCredits crew={crew} setCrew={setCrew} user={user} profile={profile} />}
 
           {step === 4 && (
             <>
@@ -433,13 +455,16 @@ export default function UploadModal({ film, onClose }) {
           )}
         </div>
         {step === STEPS.length - 1 && (
-          <p className="upload-note">
-            {invitedCount
-              ? `${invitedCount} person will get an email invite to claim their credit.`
-              : crew.length
-                ? 'Everyone tagged already has an account.'
-                : 'You can tag crew later from My Projects.'}
-          </p>
+          <>
+            <p className="upload-note">
+              {invitedCount
+                ? `${invitedCount} ${invitedCount === 1 ? 'person' : 'people'} will get an email invite to claim their credit when you publish.`
+                : crew.length
+                  ? 'Everyone tagged already has an account.'
+                  : 'You can tag crew later from My Projects.'}
+            </p>
+            {fetchError ? <p className="auth-error">{fetchError}</p> : null}
+          </>
         )}
       </div>
     </div>

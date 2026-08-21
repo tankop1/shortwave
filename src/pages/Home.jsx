@@ -7,7 +7,6 @@ import { HomeSkeleton } from '../components/Skeleton'
 export default function Home() {
   const { films, catalogLoading, byId, onOpen, onUpload, profile, user } = useOutletContext()
   const featured = films[0] || null
-  const week = films.slice(0, 4)
 
   const crew = useMemo(() => {
     if (!user) return []
@@ -64,14 +63,26 @@ export default function Home() {
         </div>
       </button>
 
-      {week.length > 0 && (
-        <FilmRow title="New this week" hint={`${week.length} titles`} films={week} onOpen={onOpen} />
+      {films.length > 0 && (
+        <FilmRow
+          scroll
+          title="New this week"
+          hint={`${films.length} titles`}
+          films={films}
+          onOpen={onOpen}
+        />
       )}
       {crew.length > 0 && (
-        <FilmRow title="From your crew" hint={`${crew.length} shared`} films={crew} onOpen={onOpen} />
+        <FilmRow
+          scroll
+          title="From your crew"
+          hint={`${crew.length} shared`}
+          films={crew}
+          onOpen={onOpen}
+        />
       )}
       {saved.length > 0 && (
-        <FilmRow title="Your list" hint="Saved" films={saved} onOpen={onOpen} />
+        <FilmRow scroll title="Your list" hint="Saved" films={saved} onOpen={onOpen} />
       )}
     </main>
   )

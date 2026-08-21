@@ -10,6 +10,7 @@
   --display: "Syne", system-ui, sans-serif;
   --sans: "Outfit", system-ui, sans-serif;
   --r: 22px;
+  --shell-x: 28px;
 }
 
 * {
@@ -272,7 +273,7 @@ button {
 
 .shell {
   min-width: 0;
-  padding: 18px 28px 72px;
+  padding: 18px var(--shell-x) 72px;
 }
 
 .topbar {
@@ -674,6 +675,47 @@ button {
   gap: 14px;
 }
 
+.block-scroll {
+  width: calc(100% + 2 * var(--shell-x));
+  margin-inline: calc(-1 * var(--shell-x));
+}
+
+.block-scroll .block-head {
+  padding-inline: var(--shell-x);
+}
+
+.feature-row {
+  --row-cols: 4;
+  --row-gap: 14px;
+  display: flex;
+  gap: var(--row-gap);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--shell-x);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.feature-row::-webkit-scrollbar {
+  display: none;
+}
+
+.feature-row::before,
+.feature-row::after {
+  content: "";
+  flex: none;
+  width: calc(var(--shell-x) - var(--row-gap));
+}
+
+.feature-row .shot {
+  flex: none;
+  width: calc(
+    (100% - 2 * var(--shell-x) - (var(--row-cols) - 1) * var(--row-gap)) / var(--row-cols)
+  );
+  scroll-snap-align: start;
+}
+
 .shot {
   position: relative;
   display: block;
@@ -939,6 +981,7 @@ button {
   width: 22px;
   height: 22px;
   border-radius: 50%;
+  object-fit: cover;
 }
 
 .credit-role {
@@ -1322,6 +1365,11 @@ button {
   color: var(--mute);
   font-size: 13px;
   font-weight: 600;
+}
+
+.upload-step:disabled {
+  cursor: default;
+  opacity: 0.55;
 }
 
 .upload-step span {
@@ -1788,6 +1836,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overflow: visible;
 }
 
 .credit-dialog-top {
@@ -1834,10 +1883,16 @@ button {
   line-height: 1;
 }
 
+.suggest-wrap {
+  position: relative;
+}
+
 .suggest-list {
+  background: #171718;
   border: 1px solid var(--line);
   border-radius: 12px;
-  overflow: hidden;
+  overflow: auto;
+  max-height: 280px;
 }
 
 .suggest-item {
@@ -1849,8 +1904,109 @@ button {
   text-align: left;
 }
 
-.suggest-item:hover {
+.suggest-item:hover,
+.suggest-item.is-active {
   background: rgba(255, 255, 255, 0.05);
+}
+
+.suggest-item em {
+  font-style: normal;
+  color: var(--accent);
+}
+
+.suggest-invite {
+  border-top: 1px solid var(--line);
+}
+
+.suggest-invite-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(232, 112, 58, 0.16);
+  flex: none;
+}
+
+.suggest-invite-icon .icon {
+  width: 12px;
+  height: 12px;
+}
+
+.suggest-empty {
+  padding: 12px;
+  font-size: 13px;
+  color: var(--mute);
+}
+
+.invite-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.invite-card {
+  width: min(560px, 100%);
+  padding: 28px 28px 24px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.invite-kicker {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.invite-card h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1.1;
+}
+
+.invite-card p {
+  margin: 0;
+  color: var(--mute);
+  line-height: 1.5;
+}
+
+.invite-logline {
+  font-size: 14px;
+}
+
+.invite-poster {
+  overflow: hidden;
+  border-radius: 16px;
+  aspect-ratio: 16 / 9;
+  background: var(--lift);
+}
+
+.invite-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.invite-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.invite-card .solid-btn,
+.invite-card .ghost-btn {
+  width: fit-content;
 }
 
 .vis-option {
@@ -2098,6 +2254,10 @@ button {
     grid-template-columns: 1fr 1fr;
   }
 
+  .feature-row {
+    --row-cols: 2;
+  }
+
   .template-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -2113,7 +2273,8 @@ button {
   }
 
   .shell {
-    padding: 14px 16px 56px;
+    --shell-x: 16px;
+    padding: 14px var(--shell-x) 56px;
   }
 
   .hero {
@@ -2126,6 +2287,10 @@ button {
 
   .feature-grid {
     grid-template-columns: 1fr;
+  }
+
+  .feature-row {
+    --row-cols: 1;
   }
 
   .template-grid,

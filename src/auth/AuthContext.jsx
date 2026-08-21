@@ -76,6 +76,8 @@ export function AuthProvider({ children }) {
         doc(db, 'users', user.uid),
         {
           ...data,
+          email: data.email || user.email || null,
+          emailLower: (data.email || user.email || '').trim().toLowerCase(),
           nameLower: (data.name || '').trim().toLowerCase(),
           updatedAt: serverTimestamp(),
         },
