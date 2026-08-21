@@ -6,10 +6,11 @@ import { ProjectListSkeleton } from '../components/Skeleton'
 import { db } from '../firebase'
 import { statusKind, statusLabel } from '../data'
 import { copyFilmLink } from '../lib/share'
+import { filmRating, formatAverage } from '../lib/reviews'
 import { filmAnalytics, formatCount } from '../lib/views'
 
 export default function Projects() {
-  const { myFilms, libraryLoading, pendingCredits, onUpload, onEdit, user } = useOutletContext()
+  const { myFilms, libraryLoading, pendingCredits, onUpload, onEdit, onOpen, user } = useOutletContext()
   const [dismissed, setDismissed] = useState([])
   const [copiedId, setCopiedId] = useState(null)
 
@@ -117,7 +118,12 @@ export default function Projects() {
                 </div>
                 <p className="project-logline">{film.logline}</p>
                 <div className="project-actions">
+                  <button type="button" className="ghost-btn project-edit" onClick={() => onOpen(film.id)}>
+                    <Icon name="eye" />
+                    See project
+                  </button>
                   <button type="button" className="ghost-btn project-edit" onClick={() => onEdit(film)}>
+                    <Icon name="edit" />
                     Edit
                   </button>
                   {film.status === 'published' && (
@@ -139,8 +145,13 @@ export default function Projects() {
 
 function ProjectStats({ film }) {
   const { watched, plays } = filmAnalytics(film)
+  const { average, count } = filmRating(film)
   return (
     <div className="project-stats">
+      <div className="project-stat">
+        <div className="project-views">{count ? formatAverage(average) : '—'}</div>
+        <div className="project-views-label">avg</div>
+      </div>
       <div className="project-stat">
         <div className="project-views">{formatCount(watched)}</div>
         <div className="project-views-label">{watched === 1 ? 'person' : 'people'}</div>

@@ -280,7 +280,7 @@ export default function AppShell() {
         />
       </div>
 
-      {activeFilm && <Player film={activeFilm} onClose={closePlayer} />}
+      {activeFilm && <Player film={activeFilm} onClose={closePlayer} onSignup={() => openAuth('signup')} />}
       {uploadOpen && !needsOnboarding && (
         <UploadModal
           film={editFilm}

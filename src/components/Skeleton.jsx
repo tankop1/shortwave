@@ -61,6 +61,10 @@ export function ProjectListSkeleton({ count = 3 }) {
               <span className="skeleton skeleton-text skeleton-stat-value" />
               <span className="skeleton skeleton-text skeleton-stat-label" />
             </div>
+            <div className="project-stat">
+              <span className="skeleton skeleton-text skeleton-stat-value" />
+              <span className="skeleton skeleton-text skeleton-stat-label" />
+            </div>
           </div>
         </div>
       ))}

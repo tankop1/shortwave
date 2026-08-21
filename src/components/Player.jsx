@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react'
 import Icon from './Icon'
 import { useAuth } from '../auth/AuthContext'
+import FilmReviews from './FilmReviews'
 import { embedUrl } from '../lib/video'
 import { copyFilmLink } from '../lib/share'
+import { filmRating, formatAverage } from '../lib/reviews'
 import { filmAnalytics, formatCount, recordWatch } from '../lib/views'
 
-export default function Player({ film, onClose }) {
+export default function Player({ film, onClose, onSignup }) {
   const { user, profile, saveProfile } = useAuth()
   const [playing, setPlaying] = useState(Boolean(embedUrl(film)))
   const [copied, setCopied] = useState(false)
   const embed = embedUrl(film)
   const saved = (profile?.savedFilmIds || []).includes(film.id)
   const { watched, plays } = filmAnalytics(film)
+  const { average, count } = filmRating(film)
 
   useEffect(() => {
     function onKey(event) {
@@ -105,6 +108,7 @@ export default function Player({ film, onClose }) {
                     : plays > 0
                       ? `${formatCount(plays)} views`
                       : null,
+                  count ? `${formatAverage(average)}★` : null,
                 ]
                   .filter(Boolean)
                   .join(' · ')}
@@ -128,6 +132,7 @@ export default function Player({ film, onClose }) {
             </div>
           </div>
           {film.logline && <p className="player-logline">{film.logline}</p>}
+          <FilmReviews film={film} onSignup={onSignup} />
           {(film.credits || []).length > 0 && (
             <>
               <div className="credits-label">Cast &amp; crew</div>
