@@ -1,6 +1,7 @@
 import { doc, getDoc, runTransaction, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { decorateFilm } from '../data'
+import { normalizeSiteStyle } from './siteStyle'
 
 export const RESERVED_SLUGS = new Set([
   'search',
@@ -76,6 +77,7 @@ export function normalizePortfolio(raw = {}) {
     filmIds: Array.isArray(raw.filmIds) ? raw.filmIds.filter(Boolean) : [],
     aboutText: typeof raw.aboutText === 'string' ? raw.aboutText : '',
     aboutImageUrl: typeof raw.aboutImageUrl === 'string' ? raw.aboutImageUrl : '',
+    ...normalizeSiteStyle(raw),
   }
 }
 

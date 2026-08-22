@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom'
 import PortfolioSite from '../components/portfolio/PortfolioSite'
 import MediaPicker from '../components/portfolio/MediaPicker'
 import FilmPicker from '../components/portfolio/FilmPicker'
+import StylePicker from '../components/portfolio/StylePicker'
 import SiteLoader from '../components/portfolio/SiteLoader'
 import Icon from '../components/Icon'
 import { uploadImage } from '../lib/cloudinary'
@@ -31,6 +32,7 @@ export default function Portfolio() {
   const [saving, setSaving] = useState(false)
   const [mediaOpen, setMediaOpen] = useState(false)
   const [filmsOpen, setFilmsOpen] = useState(false)
+  const [styleOpen, setStyleOpen] = useState(false)
   const saveTimer = useRef(null)
   const portfolioRef = useRef(null)
   const booted = useRef(false)
@@ -207,7 +209,7 @@ export default function Portfolio() {
         </label>
         <div className="studio-actions">
           {saving ? <span className="studio-save">Saving</span> : null}
-          <button type="button" className="ghost-btn" disabled title="Coming soon">
+          <button type="button" className="ghost-btn" onClick={() => setStyleOpen(true)}>
             <Icon name="palette" />
             Style
           </button>
@@ -251,6 +253,13 @@ export default function Portfolio() {
           selectedIds={portfolio.filmIds}
           onChange={(filmIds) => patch({ filmIds })}
           onClose={() => setFilmsOpen(false)}
+        />
+      )}
+      {styleOpen && (
+        <StylePicker
+          portfolio={portfolio}
+          onChange={patch}
+          onClose={() => setStyleOpen(false)}
         />
       )}
     </main>

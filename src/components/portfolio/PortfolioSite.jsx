@@ -3,6 +3,7 @@ import Icon from '../Icon'
 import { initialsFromName } from '../../data'
 import { embedUrl } from '../../lib/video'
 import { sendPortfolioMessage } from '../../lib/messages'
+import { siteThemeStyle } from '../../lib/siteStyle'
 
 function scrollToId(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -262,7 +263,11 @@ export default function PortfolioSite({
   }
 
   return (
-    <div className={`psite${editable ? ' is-editing' : ''}`} id="top">
+    <div
+      className={`psite${editable ? ' is-editing' : ''} is-${portfolio.colorMode || 'dark'}`}
+      id="top"
+      style={siteThemeStyle(portfolio)}
+    >
       <header className="psite-nav">
         <a href="#top" className="psite-logo" onClick={(event) => {
           event.preventDefault()
@@ -323,7 +328,7 @@ export default function PortfolioSite({
             {films.length} {films.length === 1 ? 'film' : 'films'}
           </span>
           {editable && (
-            <button type="button" className="ghost-btn" onClick={onEditFilms}>
+            <button type="button" className="ghost-btn psite-studio-btn" onClick={onEditFilms}>
               Choose films
             </button>
           )}

@@ -72,7 +72,9 @@ service cloud.firestore {
         allow list: if signedIn()
           && get(/databases/$(database)/documents/films/$(filmId)).data.ownerId == request.auth.uid;
         allow create: if true;
-        allow update, delete: if false;
+        allow update: if false;
+        allow delete: if signedIn()
+          && get(/databases/$(database)/documents/films/$(filmId)).data.ownerId == request.auth.uid;
       }
 
       match /reviews/{reviewId} {
@@ -83,7 +85,10 @@ service cloud.firestore {
           && request.resource.data.rating is number
           && request.resource.data.rating >= 1
           && request.resource.data.rating <= 5;
-        allow delete: if signedIn() && request.auth.uid == reviewId;
+        allow delete: if signedIn() && (
+          request.auth.uid == reviewId
+          || get(/databases/$(database)/documents/films/$(filmId)).data.ownerId == request.auth.uid
+        );
       }
     }
 

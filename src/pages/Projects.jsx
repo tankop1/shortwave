@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
 import { useOutletContext } from 'react-router-dom'
 import Icon from '../components/Icon'
@@ -8,15 +8,30 @@ import { statusKind, statusLabel } from '../data'
 import { copyFilmLink } from '../lib/share'
 import { filmRating, formatAverage } from '../lib/reviews'
 import { filmAnalytics, formatCount } from '../lib/views'
+import { deleteProject } from '../lib/films'
+import { normalizePortfolio } from '../lib/portfolio'
 
 export default function Projects() {
-  const { myFilms, libraryLoading, pendingCredits, onUpload, onEdit, onOpen, user } = useOutletContext()
+  const { myFilms, libraryLoading, pendingCredits, onUpload, onEdit, onOpen, user, profile } = useOutletContext()
   const [dismissed, setDismissed] = useState([])
   const [copiedId, setCopiedId] = useState(null)
+  const [menuId, setMenuId] = useState(null)
+  const [confirmFilm, setConfirmFilm] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const pending = pendingCredits.filter((film) => !dismissed.includes(film.id))
   const embargoed = myFilms.filter((film) => film.status === 'embargoed').length
   const waiting = pending.length
+
+  useEffect(() => {
+    if (!confirmFilm || deleting) return undefined
+    function onKey(event) {
+      if (event.key === 'Escape') setConfirmFilm(null)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [confirmFilm, deleting])
 
   async function acceptCredit(film) {
     if (!user) return
@@ -37,6 +52,20 @@ export default function Projects() {
       window.setTimeout(() => setCopiedId((current) => (current === film.id ? null : current)), 1800)
     } catch {
       /* ignore */
+    }
+  }
+
+  async function confirmDelete() {
+    if (!user || !confirmFilm || deleting) return
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      await deleteProject(user.uid, confirmFilm, normalizePortfolio(profile?.portfolio))
+      setConfirmFilm(null)
+    } catch (err) {
+      setDeleteError(err?.message || 'Couldn’t delete that project.')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -132,6 +161,16 @@ export default function Projects() {
                       {copiedId === film.id ? 'Copied' : 'Share'}
                     </button>
                   )}
+                  <ProjectMenu
+                    open={menuId === film.id}
+                    onToggle={() => setMenuId((current) => (current === film.id ? null : film.id))}
+                    onClose={() => setMenuId(null)}
+                    onDelete={() => {
+                      setMenuId(null)
+                      setDeleteError('')
+                      setConfirmFilm(film)
+                    }}
+                  />
                 </div>
               </div>
               <ProjectStats film={film} />
@@ -139,7 +178,84 @@ export default function Projects() {
           ))}
         </div>
       )}
+
+      {confirmFilm && (
+        <div className="credit-dialog-backdrop" onClick={() => !deleting && setConfirmFilm(null)} role="presentation">
+          <div
+            className="credit-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-project-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="credit-dialog-top">
+              <h3 id="delete-project-title">Delete this project?</h3>
+              <button
+                type="button"
+                className="upload-modal-close"
+                onClick={() => !deleting && setConfirmFilm(null)}
+                aria-label="Close"
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+            <p className="field-help">
+              “{confirmFilm.title}” will be permanently removed from Shortwave. This can’t be undone.
+            </p>
+            {deleteError ? <p className="auth-error">{deleteError}</p> : null}
+            <div className="credit-dialog-foot">
+              <button type="button" className="ghost-btn" disabled={deleting} onClick={() => setConfirmFilm(null)}>
+                Cancel
+              </button>
+              <button type="button" className="solid-btn is-danger" disabled={deleting} onClick={confirmDelete}>
+                {deleting ? 'Deleting…' : 'Delete project'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
+  )
+}
+
+function ProjectMenu({ open, onToggle, onClose, onDelete }) {
+  const wrapRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return undefined
+    function onDoc(event) {
+      if (!wrapRef.current?.contains(event.target)) onClose()
+    }
+    function onKey(event) {
+      if (event.key === 'Escape') onClose()
+    }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open, onClose])
+
+  return (
+    <div className="project-more-wrap" ref={wrapRef}>
+      <button
+        type="button"
+        className="project-more-btn"
+        aria-label="Project options"
+        aria-expanded={open}
+        onClick={onToggle}
+      >
+        <Icon name="ellipsis" />
+      </button>
+      {open && (
+        <div className="menu project-more-menu" role="menu">
+          <button type="button" className="menu-item is-danger" role="menuitem" onClick={onDelete}>
+            Delete project
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
 

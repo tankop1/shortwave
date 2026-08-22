@@ -9,6 +9,7 @@
   --accent-ink: #160c06;
   --display: "Syne", system-ui, sans-serif;
   --sans: "Outfit", system-ui, sans-serif;
+  --app-sans: "Outfit", system-ui, sans-serif;
   --r: 22px;
   --shell-x: 28px;
 }
@@ -1561,6 +1562,7 @@ button {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .project-title {
@@ -1653,6 +1655,49 @@ button {
 .project-edit .icon {
   width: 16px;
   height: 16px;
+}
+
+.project-more-wrap {
+  position: relative;
+  flex: none;
+}
+
+.project-more-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.project-more-btn:hover,
+.project-more-btn[aria-expanded='true'] {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.project-more-btn .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.project-more-menu {
+  top: calc(100% + 6px);
+  right: 0;
+  width: 200px;
+}
+
+.menu-item.is-danger {
+  color: #f0a090;
+}
+
+.solid-btn.is-danger {
+  background: #c44536;
+  color: #fff8f6;
+}
+
+.solid-btn.is-danger:disabled {
+  opacity: 0.55;
 }
 
 .solid-btn:disabled {
@@ -3100,7 +3145,8 @@ button {
 
 .psite-page {
   min-height: 100%;
-  background: #070708;
+  background: var(--psite-bg, #070708);
+  color: var(--psite-fg, var(--fg));
   overflow-x: clip;
 }
 
@@ -3132,8 +3178,11 @@ button {
 
 .psite {
   width: 100%;
+  min-height: 100%;
   margin: 0;
   padding: 0 0 64px;
+  background: var(--psite-bg, #070708);
+  color: var(--psite-fg, var(--fg));
 }
 
 .psite-nav {
@@ -3147,13 +3196,13 @@ button {
   box-sizing: border-box;
   width: 100%;
   padding: 18px max(28px, calc((100% - 1080px) / 2 + 28px));
-  background: #070708;
+  background: var(--psite-bg, #070708);
 }
 
 .psite-logo {
   font-family: var(--display);
   font-size: 18px;
-  font-weight: 800;
+  font-weight: var(--display-weight, 800);
   letter-spacing: -0.04em;
   text-decoration: none;
   color: inherit;
@@ -3178,7 +3227,7 @@ button {
   font-weight: 650;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(244, 244, 241, 0.72);
+  color: var(--mute);
 }
 
 .psite-links button:hover {
@@ -3186,7 +3235,7 @@ button {
 }
 
 .psite-nav-contact {
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border: 1px solid var(--line) !important;
   color: var(--fg) !important;
 }
 
@@ -3201,7 +3250,7 @@ button {
   max-width: 22ch;
   font-family: var(--display);
   font-size: clamp(34px, 5.4vw, 56px);
-  font-weight: 800;
+  font-weight: var(--display-weight, 800);
   letter-spacing: -0.06em;
   line-height: 0.95;
   text-align: center;
@@ -3237,7 +3286,7 @@ button {
 
 .psite-btn-ghost {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--line);
 }
 
 .psite-media {
@@ -3247,8 +3296,8 @@ button {
   aspect-ratio: 16 / 9;
   border-radius: 20px;
   overflow: hidden;
-  background: #111;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: var(--lift);
+  border: 1px solid var(--line);
 }
 
 .psite-media-empty {
@@ -3257,7 +3306,7 @@ button {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border: 1px dashed var(--line);
   color: var(--mute);
   font-weight: 600;
 }
@@ -3335,8 +3384,8 @@ button {
   align-items: center;
   justify-content: center;
   background: rgba(8, 8, 9, 0.72);
-  color: var(--fg);
-  font-family: var(--sans);
+  color: #f4f4f1;
+  font-family: var(--app-sans);
   font-size: 12.5px;
   font-weight: 650;
   letter-spacing: 0;
@@ -3358,6 +3407,7 @@ button {
   margin: 0;
   font-family: var(--display);
   font-size: clamp(32px, 4vw, 48px);
+  font-weight: var(--display-weight, 800);
   letter-spacing: -0.05em;
 }
 
@@ -3388,7 +3438,7 @@ button {
   width: 100%;
   min-height: 180px;
   border-radius: 22px;
-  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border: 1px dashed var(--line);
   color: var(--mute);
   font-weight: 600;
 }
@@ -3404,9 +3454,9 @@ button {
   aspect-ratio: 16 / 10;
   border-radius: 18px;
   overflow: hidden;
-  background: #111;
+  background: var(--lift);
   text-align: left;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--line);
 }
 
 .psite-work-card img,
@@ -3432,6 +3482,7 @@ button {
   left: 16px;
   right: 16px;
   bottom: 14px;
+  color: #f4f4f1;
 }
 
 .psite-work-title {
@@ -3443,7 +3494,7 @@ button {
 
 .psite-work-meta {
   margin-top: 4px;
-  color: var(--mute);
+  color: rgba(244, 244, 241, 0.72);
   font-size: 13px;
 }
 
@@ -3452,7 +3503,7 @@ button {
   width: 100%;
   margin: 32px 0 40px;
   padding: 108px max(28px, calc((100% - 1080px) / 2 + 28px)) 128px;
-  background: #121316;
+  background: var(--psite-band, #121316);
   scroll-margin-top: 72px;
 }
 
@@ -3473,13 +3524,13 @@ button {
   background: var(--lift);
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--line);
 }
 
 .psite-about-photo > span {
   font-family: var(--display);
   font-size: 42px;
-  font-weight: 800;
+  font-weight: var(--display-weight, 800);
 }
 
 .psite-about-photo img {
@@ -3498,7 +3549,7 @@ button {
   max-width: 38ch;
   font-size: 17px;
   line-height: 1.7;
-  color: rgba(244, 244, 241, 0.84);
+  color: var(--fg);
 }
 
 .psite-contact {
@@ -3525,9 +3576,16 @@ button {
   width: 100%;
   max-width: 520px;
   padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--line);
   border-radius: 22px;
   text-align: left;
+}
+
+.psite .field input,
+.psite .field textarea {
+  background: var(--lift);
+  border-color: var(--line);
+  color: var(--fg);
 }
 
 .psite-form textarea {
@@ -3614,12 +3672,43 @@ textarea.is-editable {
 
 .psite.is-editing textarea.is-editable:hover,
 .psite.is-editing textarea.is-editable:focus {
-  border-color: rgba(232, 112, 58, 0.45);
-  background: rgba(255, 255, 255, 0.02);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
 }
 
 .psite.is-editing .psite-nav {
   position: static;
+}
+
+.psite.is-accent .solid-btn {
+  background: var(--fg);
+  color: var(--psite-bg);
+}
+
+.psite.is-accent .psite-logo span,
+.psite.is-accent .psite-contact h2 em,
+.psite.is-accent .psite-cta a:hover {
+  color: var(--fg);
+}
+
+.psite .ghost-btn:not(.psite-studio-btn),
+.psite .solid-btn,
+.psite-links button,
+.psite-work-empty,
+.psite-section-head span,
+.psite-work-meta,
+.psite-foot,
+.psite-muted,
+.psite .field-label {
+  font-family: var(--ui, var(--sans));
+}
+
+.psite .psite-studio-btn {
+  font-family: var(--app-sans);
+  background: #171718;
+  color: #f4f4f1;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .psite-picker {
@@ -3632,6 +3721,88 @@ textarea.is-editable {
 
 .psite-picker .upload-modal-top {
   margin-bottom: 22px;
+}
+
+.psite-style-picker .psite-mode-slider {
+  margin-bottom: 0;
+}
+
+.psite-style-picker .upload-modal-top {
+  margin-bottom: 8px;
+}
+
+.psite-style-section {
+  margin-top: 22px;
+}
+
+.psite-style-section > .field-label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.psite-font-grid {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.psite-font-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1 0 128px;
+  min-width: 128px;
+  padding: 12px 12px 10px;
+  border-radius: 16px;
+  background: #101011;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.psite-font-card.is-on {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.psite-font-card-aa {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.psite-font-card-sample {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--mute);
+  white-space: nowrap;
+}
+
+.psite-font-card-name {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.psite-swatch-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.psite-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.psite-swatch.is-on {
+  box-shadow:
+    0 0 0 2px #141415,
+    0 0 0 4px #f4f4f1;
 }
 
 .psite-mode-slider {
@@ -3728,7 +3899,7 @@ textarea.is-editable {
   border-color: rgba(232, 112, 58, 0.45);
 }
 
-.psite-drop img {
+.psite-drop > img {
   position: absolute;
   inset: 0;
   width: 100%;

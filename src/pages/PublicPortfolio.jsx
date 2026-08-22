@@ -6,6 +6,7 @@ import SiteLoader from '../components/portfolio/SiteLoader'
 import Icon from '../components/Icon'
 import { db } from '../firebase'
 import { loadPortfolioFilms, normalizePortfolio, normalizeSlug } from '../lib/portfolio'
+import { siteThemeStyle } from '../lib/siteStyle'
 
 export default function PublicPortfolio() {
   const { slug: rawSlug } = useParams()
@@ -108,7 +109,7 @@ export default function PublicPortfolio() {
   }
 
   return (
-    <main className="psite-page">
+    <main className="psite-page" style={siteThemeStyle(portfolio)}>
       <PortfolioSite
         name={profile.name}
         portfolio={portfolio}

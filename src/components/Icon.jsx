@@ -18,6 +18,7 @@ const ICONS = {
   palette: 'https://img.icons8.com/?id=102595&format=png&size=64',
   'chevron-left': 'https://img.icons8.com/?id=40024&format=png&size=64',
   'chevron-right': 'https://img.icons8.com/?id=40022&format=png&size=64',
+  ellipsis: 'https://img.icons8.com/?id=102729&format=png&size=64',
 }
 
 export default function Icon({ name, className = '' }) {
