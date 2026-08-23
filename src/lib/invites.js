@@ -3,6 +3,7 @@ import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '../firebase'
 
 export const INVITE_STORAGE_KEY = 'shortwaveInviteToken'
+export const PREVIEW_INVITE_TOKEN = 'preview'
 
 export function newInviteToken() {
   return crypto.randomUUID()
@@ -36,7 +37,7 @@ export function rankPeople(people, query) {
     .map((item) => item.person)
 }
 
-export async function upsertCreditInvites({ filmId, title, poster, logline, visibility, ownerId, ownerName, crew }) {
+export async function upsertCreditInvites({ filmId, title, poster, logline, visibility, ownerId, ownerName, crew, host, videoId }) {
   const invited = (crew || []).filter(
     (member) => member.state === 'invited' && member.email && member.inviteToken && !member.userId,
   )
@@ -52,6 +53,8 @@ export async function upsertCreditInvites({ filmId, title, poster, logline, visi
             filmTitle: title,
             filmPoster: poster || '',
             logline: logline || '',
+            host: host || '',
+            videoId: videoId || '',
             visibility,
             updatedAt: serverTimestamp(),
           },
@@ -66,6 +69,8 @@ export async function upsertCreditInvites({ filmId, title, poster, logline, visi
           filmTitle: title,
           filmPoster: poster || '',
           logline: logline || '',
+          host: host || '',
+          videoId: videoId || '',
           visibility,
           appUrl: typeof window !== 'undefined' ? window.location.origin : '',
           ownerId,

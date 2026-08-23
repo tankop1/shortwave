@@ -19,6 +19,10 @@ const ICONS = {
   'chevron-left': 'https://img.icons8.com/?id=40024&format=png&size=64',
   'chevron-right': 'https://img.icons8.com/?id=40022&format=png&size=64',
   ellipsis: 'https://img.icons8.com/?id=102729&format=png&size=64',
+  star: 'https://img.icons8.com/?id=60003&format=png&size=64',
+  bug: 'https://img.icons8.com/?id=98686&format=png&size=64',
+  settings: 'https://img.icons8.com/?id=59996&format=png&size=64',
+  logout: 'https://img.icons8.com/?id=61022&format=png&size=64',
 }
 
 export default function Icon({ name, className = '' }) {

@@ -87,6 +87,7 @@ button {
 .sidebar {
   position: sticky;
   top: 0;
+  z-index: 4;
   height: 100vh;
   padding: 22px 16px 18px;
   display: flex;
@@ -182,6 +183,71 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.nav-more {
+  position: relative;
+}
+
+.nav-more .side-link {
+  width: 100%;
+}
+
+.nav-more > .side-link .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.nav-more-menu {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 0;
+  width: 220px;
+  padding: 8px;
+  border-radius: 16px;
+  background: #1c1c1d;
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+  z-index: 30;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-6px);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease,
+    visibility 0.16s;
+}
+
+.nav-more-menu::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 0;
+  width: 14px;
+  height: 100%;
+}
+
+.nav-more:hover .nav-more-menu,
+.nav-more.is-open .nav-more-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+}
+
+.nav-more.is-locked .nav-more-menu,
+.nav-more.is-locked:hover .nav-more-menu,
+.nav-more.is-locked.is-open .nav-more-menu {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-6px);
+}
+
+.nav-more-menu .menu-item.is-on {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fg);
 }
 
 .side-foot {
@@ -479,13 +545,26 @@ button {
 }
 
 .menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   text-align: left;
   padding: 10px 12px;
   border-radius: 10px;
   font-size: 13.5px;
   color: rgba(244, 244, 241, 0.82);
+  text-decoration: none;
+}
+
+.menu-item .icon {
+  width: 18px;
+  height: 18px;
+  opacity: 0.75;
+}
+
+.menu-item:hover .icon {
+  opacity: 1;
 }
 
 .menu-item:hover {
@@ -1527,6 +1606,14 @@ button {
   margin-top: 32px;
 }
 
+.list-page > .projects-toolbar {
+  justify-content: flex-start;
+}
+
+.list-page > .projects-toolbar + .block {
+  margin-top: 0;
+}
+
 .empty-panel p {
   margin: 4px 0 6px;
   font-family: var(--display);
@@ -2092,6 +2179,36 @@ button {
   line-height: 1.5;
 }
 
+.debug-modal {
+  max-width: 420px;
+}
+
+.debug-modal-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.debug-modal-top h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.debug-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.debug-body .solid-btn {
+  width: fit-content;
+}
+
 .settings-rows {
   display: flex;
   flex-direction: column;
@@ -2616,11 +2733,10 @@ button {
   border-radius: var(--r);
   display: flex;
   flex-direction: column;
-  gap: 14px;
 }
 
 .invite-kicker {
-  margin: 0;
+  margin: 0 0 6px;
   font-size: 11px;
   font-weight: 650;
   letter-spacing: 0.12em;
@@ -2628,43 +2744,145 @@ button {
   color: var(--accent);
 }
 
-.invite-card h1 {
+.invite-title {
   margin: 0;
-  font-family: var(--display);
-  font-size: 32px;
-  font-weight: 800;
-  letter-spacing: -0.05em;
-  line-height: 1.1;
+  font-size: 28px;
+}
+
+.invite-role {
+  color: var(--accent);
+}
+
+.invite-confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.invite-confetti span {
+  position: absolute;
+  top: -16px;
+  border-radius: 2px;
+  opacity: 0.95;
+  animation-name: invite-confetti-fall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes invite-confetti-fall {
+  0% {
+    transform: translate3d(0, -12vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--drift), 110vh, 0) rotate(var(--spin));
+    opacity: 0;
+  }
+}
+
+.invite-copy {
+  margin: 8px 0 0;
 }
 
 .invite-card p {
-  margin: 0;
   color: var(--mute);
   line-height: 1.5;
 }
 
-.invite-logline {
-  font-size: 14px;
+.invite-account {
+  margin: 0;
+  font-style: italic;
 }
 
-.invite-poster {
+.invite-media {
+  position: relative;
   overflow: hidden;
+  margin: 24px 0 22px;
   border-radius: 16px;
   aspect-ratio: 16 / 9;
-  background: var(--lift);
+  background: #000;
 }
 
-.invite-poster img {
+.invite-media-btn,
+.invite-media-still {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0;
+  cursor: pointer;
+}
+
+.invite-media-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.invite-media img,
+.invite-embed,
+.invite-media-empty {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
+.invite-embed {
+  border: 0;
+}
+
+.invite-media-empty {
+  background: var(--lift);
+}
+
+.invite-watch {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 42px;
+  padding: 0 16px 0 15px;
+  border-radius: 999px;
+  background: #fff;
+  color: #111;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+}
+
+.invite-watch-play {
+  display: block;
+  width: 11px;
+  height: 13px;
+  flex-shrink: 0;
+  color: #111;
+}
+
 .invite-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.invite-card > .solid-btn {
+  margin-top: 14px;
 }
 
 .invite-card .solid-btn,
@@ -3028,6 +3246,23 @@ button {
     padding: 12px;
   }
 
+  .nav-more:hover .nav-more-menu,
+  .nav-more:focus-within .nav-more-menu {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .nav-more.is-open .nav-more-menu {
+    position: static;
+    width: auto;
+    margin-top: 4px;
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
   .shell {
     --shell-x: 16px;
     grid-row: 2;
@@ -3139,8 +3374,8 @@ button {
     padding: 20px 16px;
   }
 
-  .invite-card h1 {
-    font-size: 26px;
+  .invite-title {
+    font-size: 22px;
   }
 
   .search input,

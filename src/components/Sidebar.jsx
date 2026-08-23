@@ -1,17 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import Icon from './Icon'
 import { useAuth } from '../auth/AuthContext'
 import { NAV, PUBLIC_PATHS, initialsFromName } from '../data'
 import { subscribeMessages } from '../lib/messages'
 
-export default function Sidebar({ open = false, onClose, onUpload, onSignup, onLogin, onProtectedNav, onEditProfile, onOpenSettings }) {
-  const navigate = useNavigate()
+const MORE_ITEMS = [
+  { id: 'saved', label: 'Your list', icon: 'heart', to: '/list' },
+  { id: 'credits', label: 'Credits & Requests', icon: 'star', to: '/credits' },
+]
+
+export default function Sidebar({ open = false, onClose, onUpload, onSignup, onLogin, onProtectedNav, onEditProfile, onOpenSettings, onOpenDebug }) {
+  const location = useLocation()
   const { user, profile, signOut } = useAuth()
   const menuRef = useRef(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
+  const [moreLocked, setMoreLocked] = useState(false)
   const [unread, setUnread] = useState(0)
   const loggedIn = Boolean(user && profile?.onboarded)
+  const moreActive = MORE_ITEMS.some((item) => location.pathname === item.to)
 
   useEffect(() => {
     function onPointer(event) {
@@ -23,7 +31,8 @@ export default function Sidebar({ open = false, onClose, onUpload, onSignup, onL
 
   useEffect(() => {
     if (open) setMenuOpen(false)
-  }, [open])
+    setMoreOpen(false)
+  }, [open, location.pathname])
 
   const yearLine = [profile?.grade, profile?.major].filter(Boolean).join(' · ')
 
@@ -79,6 +88,45 @@ export default function Sidebar({ open = false, onClose, onUpload, onSignup, onL
                 ) : null}
               </NavLink>
             ))}
+            {group.section === 'You' ? (
+              <div
+                className={`nav-more${moreOpen ? ' is-open' : ''}${moreLocked ? ' is-locked' : ''}${moreActive ? ' has-active' : ''}`}
+                onMouseLeave={() => setMoreLocked(false)}
+              >
+                <button
+                  type="button"
+                  className={`side-link${moreActive ? ' is-active' : ''}`}
+                  aria-expanded={moreOpen}
+                  aria-haspopup="menu"
+                  onClick={() => {
+                    setMoreLocked(false)
+                    setMoreOpen((openMore) => !openMore)
+                  }}
+                >
+                  <Icon name="ellipsis" />
+                  More
+                </button>
+                <div className="nav-more-menu" role="menu">
+                  {MORE_ITEMS.map((item) => (
+                    <NavLink
+                      key={item.id}
+                      to={item.to}
+                      role="menuitem"
+                      className={({ isActive }) => `menu-item${isActive ? ' is-on' : ''}`}
+                      onClick={(event) => {
+                        setMoreOpen(false)
+                        setMoreLocked(true)
+                        close()
+                        if (!loggedIn) onProtectedNav(event, item.to)
+                      }}
+                    >
+                      <Icon name={item.icon} />
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         ))}
       </nav>
@@ -128,6 +176,7 @@ export default function Sidebar({ open = false, onClose, onUpload, onSignup, onL
                       onEditProfile()
                     }}
                   >
+                    <Icon name="edit" />
                     Edit profile
                   </button>
                   <button
@@ -136,10 +185,11 @@ export default function Sidebar({ open = false, onClose, onUpload, onSignup, onL
                     onClick={() => {
                       setMenuOpen(false)
                       close()
-                      navigate('/credits')
+                      onOpenDebug()
                     }}
                   >
-                    Credits &amp; requests
+                    <Icon name="bug" />
+                    Debug
                   </button>
                   <button
                     type="button"
@@ -150,6 +200,7 @@ export default function Sidebar({ open = false, onClose, onUpload, onSignup, onL
                       onOpenSettings()
                     }}
                   >
+                    <Icon name="settings" />
                     Settings
                   </button>
                   <button
@@ -161,6 +212,7 @@ export default function Sidebar({ open = false, onClose, onUpload, onSignup, onL
                       signOut()
                     }}
                   >
+                    <Icon name="logout" />
                     Log out
                   </button>
                 </div>

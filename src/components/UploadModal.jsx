@@ -258,6 +258,8 @@ export default function UploadModal({ film, onClose }) {
         title: payload.title,
         poster: posterUrl,
         logline: payload.logline,
+        host,
+        videoId,
         visibility,
         ownerId: user.uid,
         ownerName: profile.name,

@@ -79,7 +79,6 @@ export const NAV = [
       { id: 'projects', label: 'My Projects', icon: 'folder', to: '/projects' },
       { id: 'portfolio', label: 'Portfolio Site', icon: 'clapper', to: '/portfolio' },
       { id: 'inbox', label: 'Inbox', icon: 'inbox', to: '/inbox' },
-      { id: 'saved', label: 'Your list', icon: 'heart', to: '/list' },
     ],
   },
 ]
