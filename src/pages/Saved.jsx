@@ -3,6 +3,7 @@ import { Link, useOutletContext } from 'react-router-dom'
 import FilmRow from '../components/FilmRow'
 import Icon from '../components/Icon'
 import { FilmGridSkeleton } from '../components/Skeleton'
+import emptyWatchlistArt from '../assets/illustrations/Empty Watchlist Illustration.png'
 
 export default function Saved() {
   const { byId, onOpen, profile, catalogLoading, libraryLoading } = useOutletContext()
@@ -13,11 +14,7 @@ export default function Saved() {
   const loading = catalogLoading || libraryLoading
 
   return (
-    <main className="page" aria-busy={loading}>
-      <div className="page-head page-head-sm">
-        <h1>Your list</h1>
-        {!loading && films.length > 0 && <p>Films you saved to watch later.</p>}
-      </div>
+    <main className="page list-page" aria-busy={loading}>
       {loading ? (
         <section className="block">
           <FilmGridSkeleton />
@@ -26,9 +23,10 @@ export default function Saved() {
         <FilmRow films={films} onOpen={onOpen} />
       ) : (
         <div className="empty-panel">
-          <Icon name="clapper" className="empty-panel-graphic" />
+          <img src={emptyWatchlistArt} alt="" className="empty-panel-art" />
           <p>Your watchlist is empty</p>
           <Link to="/" className="upload-solid">
+            <Icon name="home" className="icon-dark" />
             Browse Films
           </Link>
         </div>

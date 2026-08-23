@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { markMessageRead, subscribeMessages } from '../lib/messages'
+import emptyInboxArt from '../assets/illustrations/Empty Inbox Illustration.png'
 
 function formatWhen(value) {
   const date = value?.toDate?.() instanceof Date ? value.toDate() : null
@@ -43,25 +44,22 @@ export default function Inbox() {
 
   return (
     <main className="page inbox-page">
-      <div className="page-head page-head-sm">
-        <h1>Inbox</h1>
-        <p>Messages from your portfolio contact form.</p>
-      </div>
-
       {loading ? (
         <div className="empty-panel">
           <p>Loading messages…</p>
         </div>
       ) : messages.length === 0 ? (
         <div className="empty-panel">
-          <Icon name="inbox" className="empty-panel-graphic" />
+          <img src={emptyInboxArt} alt="" className="empty-panel-art" />
           <p>No messages yet</p>
           {slug ? (
             <Link to={`/${slug}`} className="upload-solid" target="_blank" rel="noreferrer">
+              <Icon name="clapper" className="icon-dark" />
               Open your site
             </Link>
           ) : (
             <Link to="/portfolio" className="upload-solid">
+              <Icon name="clapper" className="icon-dark" />
               Set up your site
             </Link>
           )}

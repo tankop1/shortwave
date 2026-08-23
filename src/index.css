@@ -78,6 +78,7 @@ button {
 
 .app {
   min-height: 100%;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: 232px 1fr;
   background: var(--bg);
@@ -300,6 +301,9 @@ button {
 
 .shell {
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   padding: 18px var(--shell-x) 72px;
 }
 
@@ -489,13 +493,18 @@ button {
 .home {
   display: flex;
   flex-direction: column;
+  flex: 1;
   gap: 36px;
   margin-top: 22px;
+  min-height: 0;
+}
+
+.home:has(> .empty-panel:only-child) {
+  margin-top: 0;
 }
 
 .home .empty-panel {
   margin-top: 0;
-  min-height: 420px;
 }
 
 @keyframes skeleton-shimmer {
@@ -1325,16 +1334,87 @@ button {
 }
 
 .page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   margin-top: 22px;
+}
+
+.page:has(> .empty-panel:only-child) {
+  margin-top: 0;
 }
 
 .projects-page {
   margin-top: 24px;
 }
 
-.projects-page .page-head-row {
-  align-items: flex-start;
-  margin-bottom: 36px;
+.projects-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.projects-toolbar-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.projects-count {
+  margin: 0;
+  color: var(--mute);
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.projects-sort {
+  position: relative;
+}
+
+.projects-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 28px 0 12px;
+  border-radius: 999px;
+  color: rgba(244, 244, 241, 0.82);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  background-color: var(--lift);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='rgba(244,244,241,0.55)' d='M1.2 1.2 6 6l4.8-4.8'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px;
+}
+
+.projects-sort-btn:hover,
+.projects-sort-btn[aria-expanded='true'] {
+  background-color: #1c1c1d;
+  color: var(--fg);
+}
+
+.projects-sort-menu {
+  left: 0;
+  right: auto;
+  top: calc(100% + 6px);
+  width: 168px;
+}
+
+.projects-sort-menu .menu-item.is-on {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fg);
+}
+
+.projects-toolbar .upload-solid {
+  flex: none;
+  width: auto;
+  padding: 0 16px;
 }
 
 .projects-page .credit-banner,
@@ -1352,15 +1432,20 @@ button {
   margin-top: 32px;
 }
 
+.page .block:first-child {
+  margin-top: 0;
+}
+
 .empty-panel {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  flex: 1;
   gap: 14px;
   width: 100%;
-  min-height: 340px;
-  margin-top: 28px;
+  min-height: 0;
+  margin-top: 0;
   padding: 48px 24px;
   border-radius: var(--r);
   background: var(--lift);
@@ -1371,6 +1456,20 @@ button {
   width: 72px;
   height: 72px;
   opacity: 0.38;
+}
+
+.empty-panel-art {
+  width: min(200px, 56%);
+  height: auto;
+  display: block;
+  pointer-events: none;
+  mix-blend-mode: lighten;
+}
+
+.projects-page > .empty-panel,
+.inbox-page > .empty-panel,
+.list-page > .empty-panel {
+  margin-top: 32px;
 }
 
 .empty-panel p {
@@ -2667,6 +2766,8 @@ button {
 @media (max-width: 860px) {
   .app {
     grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 100dvh;
   }
 
   .mobile-topbar {
@@ -2674,6 +2775,8 @@ button {
     position: sticky;
     top: 0;
     z-index: 72;
+    grid-row: 1;
+    grid-column: 1;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
@@ -2716,6 +2819,8 @@ button {
     position: fixed;
     inset: 0;
     z-index: 70;
+    grid-row: 1 / -1;
+    grid-column: 1;
     background: rgba(6, 6, 7, 0.62);
     border: 0;
     padding: 0;
@@ -2728,6 +2833,8 @@ button {
     right: 0;
     bottom: 0;
     z-index: 71;
+    grid-row: 1 / -1;
+    grid-column: 1;
     width: min(320px, 88vw);
     height: 100dvh;
     padding: calc(70px + env(safe-area-inset-top, 0px)) 16px calc(18px + env(safe-area-inset-bottom, 0px));
@@ -2760,6 +2867,8 @@ button {
 
   .shell {
     --shell-x: 16px;
+    grid-row: 2;
+    grid-column: 1;
     padding: 14px var(--shell-x) calc(56px + env(safe-area-inset-bottom, 0px));
   }
 
@@ -2770,8 +2879,11 @@ button {
 
   .home .empty-panel,
   .empty-panel {
-    min-height: 240px;
     padding: 32px 16px;
+  }
+
+  .empty-panel-art {
+    width: min(160px, 58%);
   }
 
   .hero {
@@ -2840,6 +2952,16 @@ button {
   .invite-card .solid-btn,
   .invite-card .ghost-btn {
     width: 100%;
+  }
+
+  .projects-toolbar {
+    gap: 10px;
+  }
+
+  .projects-toolbar .upload-solid {
+    height: 40px;
+    padding: 0 12px;
+    font-size: 13px;
   }
 
   .project-title {
@@ -3151,7 +3273,10 @@ button {
 }
 
 .psite-page {
+  display: flex;
+  flex-direction: column;
   min-height: 100%;
+  min-height: 100dvh;
   background: var(--psite-bg, #070708);
   color: var(--psite-fg, var(--fg));
   overflow-x: clip;

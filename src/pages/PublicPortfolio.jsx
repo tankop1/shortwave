@@ -101,6 +101,7 @@ export default function PublicPortfolio() {
           <Icon name="clapper" className="empty-panel-graphic" />
           <p>This portfolio isn’t live</p>
           <Link to="/" className="upload-solid">
+            <Icon name="home" className="icon-dark" />
             Go to Shortwave
           </Link>
         </div>

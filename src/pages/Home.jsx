@@ -47,6 +47,7 @@ export default function Home() {
           <Icon name="clapper" className="empty-panel-graphic" />
           <p>Nothing screening yet</p>
           <button type="button" className="upload-solid" onClick={onUpload}>
+            <Icon name="plus" className="icon-dark" />
             Upload a film
           </button>
         </div>

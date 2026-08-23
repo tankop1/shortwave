@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
 import { useOutletContext } from 'react-router-dom'
 import Icon from '../components/Icon'
@@ -10,6 +10,29 @@ import { filmRating, formatAverage } from '../lib/reviews'
 import { filmAnalytics, formatCount } from '../lib/views'
 import { deleteProject } from '../lib/films'
 import { normalizePortfolio } from '../lib/portfolio'
+import emptyProjectsArt from '../assets/illustrations/Empty Projects Illustration.png'
+
+const SORT_OPTIONS = [
+  { id: 'new', label: 'New to Old' },
+  { id: 'old', label: 'Old to New' },
+  { id: 'az', label: 'A to Z' },
+]
+
+function filmTime(film) {
+  return film.createdAt?.toMillis?.() || 0
+}
+
+function sortFilms(films, sort) {
+  const next = [...films]
+  if (sort === 'az') {
+    next.sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }))
+  } else if (sort === 'old') {
+    next.sort((a, b) => filmTime(a) - filmTime(b))
+  } else {
+    next.sort((a, b) => filmTime(b) - filmTime(a))
+  }
+  return next
+}
 
 export default function Projects() {
   const { myFilms, libraryLoading, pendingCredits, onUpload, onEdit, onOpen, user, profile } = useOutletContext()
@@ -19,10 +42,10 @@ export default function Projects() {
   const [confirmFilm, setConfirmFilm] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [sort, setSort] = useState('new')
+  const sortedFilms = useMemo(() => sortFilms(myFilms, sort), [myFilms, sort])
 
   const pending = pendingCredits.filter((film) => !dismissed.includes(film.id))
-  const embargoed = myFilms.filter((film) => film.status === 'embargoed').length
-  const waiting = pending.length
 
   useEffect(() => {
     if (!confirmFilm || deleting) return undefined
@@ -72,11 +95,6 @@ export default function Projects() {
   if (libraryLoading) {
     return (
       <main className="page projects-page" aria-busy="true">
-        <div className="page-head-row">
-          <div className="page-head page-head-sm">
-            <h1>My projects</h1>
-          </div>
-        </div>
         <ProjectListSkeleton />
       </main>
     )
@@ -84,24 +102,20 @@ export default function Projects() {
 
   return (
     <main className="page projects-page">
-      <div className="page-head-row">
-        <div className="page-head page-head-sm">
-          <h1>My projects</h1>
-          {myFilms.length > 0 && (
-            <p>
+      {myFilms.length > 0 && (
+        <div className="projects-toolbar">
+          <div className="projects-toolbar-meta">
+            <p className="projects-count">
               {myFilms.length} {myFilms.length === 1 ? 'film' : 'films'}
-              {embargoed ? ` · ${embargoed} embargoed` : ''}
-              {waiting ? ` · ${waiting} credit${waiting === 1 ? '' : 's'} waiting on you` : ''}
             </p>
-          )}
-        </div>
-        {myFilms.length > 0 && (
+            <ProjectSort value={sort} onChange={setSort} />
+          </div>
           <button type="button" className="upload-solid" onClick={onUpload}>
             <Icon name="plus" className="icon-dark" />
             Add a project
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {pending.map((film) => {
         const credit = (film.crew || []).find((member) => member.userId === user.uid)
@@ -127,15 +141,16 @@ export default function Projects() {
 
       {myFilms.length === 0 ? (
         <div className="empty-panel">
-          <Icon name="folder" className="empty-panel-graphic" />
+          <img src={emptyProjectsArt} alt="" className="empty-panel-art" />
           <p>Your projects are empty</p>
           <button type="button" className="upload-solid" onClick={onUpload}>
+            <Icon name="plus" className="icon-dark" />
             Add a project
           </button>
         </div>
       ) : (
         <div className="project-list">
-          {myFilms.map((film) => (
+          {sortedFilms.map((film) => (
             <div key={film.id} className="project-row">
               <div className="project-still">
                 {film.poster ? <img src={film.poster} alt="" /> : <div className="project-still-empty" />}
@@ -215,6 +230,62 @@ export default function Projects() {
         </div>
       )}
     </main>
+  )
+}
+
+function ProjectSort({ value, onChange }) {
+  const wrapRef = useRef(null)
+  const [open, setOpen] = useState(false)
+  const current = SORT_OPTIONS.find((option) => option.id === value) || SORT_OPTIONS[0]
+
+  useEffect(() => {
+    if (!open) return undefined
+    function onDoc(event) {
+      if (!wrapRef.current?.contains(event.target)) setOpen(false)
+    }
+    function onKey(event) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div className="projects-sort" ref={wrapRef}>
+      <button
+        type="button"
+        className="projects-sort-btn"
+        aria-label="Sort projects"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((currentOpen) => !currentOpen)}
+      >
+        {current.label}
+      </button>
+      {open && (
+        <div className="menu projects-sort-menu" role="listbox" aria-label="Sort projects">
+          {SORT_OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              className={`menu-item${option.id === value ? ' is-on' : ''}`}
+              role="option"
+              aria-selected={option.id === value}
+              onClick={() => {
+                onChange(option.id)
+                setOpen(false)
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
