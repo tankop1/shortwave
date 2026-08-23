@@ -2194,6 +2194,54 @@ button {
   min-height: 0;
 }
 
+.debug-modal.is-list {
+  max-width: 640px;
+}
+
+.debug-invite-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(52vh, 420px);
+  overflow: auto;
+  margin-top: 4px;
+}
+
+.debug-invite {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--lift);
+}
+
+.debug-invite-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.debug-invite-name {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.debug-invite-meta {
+  margin-top: 3px;
+  color: var(--mute);
+  font-size: 13px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debug-invite-btn {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
 .settings-rows {
   display: flex;
   flex-direction: column;

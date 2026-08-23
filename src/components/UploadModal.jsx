@@ -17,6 +17,7 @@ import { COURSES, GENRES } from '../data'
 import { fetchVideoMeta } from '../lib/video'
 import { uploadImage } from '../lib/cloudinary'
 import { upsertCreditInvites, sendFilmCreditInvites } from '../lib/invites'
+import { includeFilmOnPortfolio } from '../lib/portfolio'
 
 const STEPS = [
   {
@@ -270,6 +271,13 @@ export default function UploadModal({ film, onClose }) {
           await sendFilmCreditInvites(filmId)
         } catch {
           /* film is already live; invites stay saved if email fails */
+        }
+      }
+      if (status === 'published') {
+        try {
+          await includeFilmOnPortfolio(user.uid, filmId)
+        } catch {
+          /* project is saved; portfolio can be updated later */
         }
       }
       onClose()

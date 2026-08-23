@@ -1,21 +1,47 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Icon from './Icon'
-import { PREVIEW_INVITE_TOKEN, sendTestInviteEmail } from '../lib/invites'
+import { formatRoles, memberRoles } from '../data'
+import {
+  PREVIEW_INVITE_TOKEN,
+  listPendingInvites,
+  sendCreditInviteEmail,
+  sendTestInviteEmail,
+} from '../lib/invites'
 
 const DEBUG_PASSWORD = 'debug'
+
+function inviteKey(invite) {
+  return `${invite.filmId}:${invite.token || invite.email}`
+}
+
+function inviteRole(invite) {
+  return formatRoles(memberRoles(invite)) || invite.role || 'crew'
+}
 
 export default function DebugModal({ onClose }) {
   const navigate = useNavigate()
   const [unlocked, setUnlocked] = useState(false)
+  const [view, setView] = useState('tools')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
+  const [invites, setInvites] = useState([])
+  const [loadingInvites, setLoadingInvites] = useState(false)
+  const [sendingKey, setSendingKey] = useState('')
+  const [sentKeys, setSentKeys] = useState([])
 
   useEffect(() => {
     function onKey(event) {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') {
+        if (unlocked && view === 'invites') {
+          setView('tools')
+          setError('')
+          return
+        }
+        onClose()
+      }
     }
     document.addEventListener('keydown', onKey)
     const prev = document.body.style.overflow
@@ -24,7 +50,7 @@ export default function DebugModal({ onClose }) {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = prev
     }
-  }, [onClose])
+  }, [onClose, unlocked, view])
 
   function onUnlock(event) {
     event.preventDefault()
@@ -55,10 +81,47 @@ export default function DebugModal({ onClose }) {
     }
   }
 
+  async function openPendingInvites() {
+    setError('')
+    setNote('')
+    setView('invites')
+    setLoadingInvites(true)
+    try {
+      const next = await listPendingInvites()
+      setInvites(next)
+    } catch (err) {
+      setError(err.message || 'Couldn’t load pending invites.')
+    } finally {
+      setLoadingInvites(false)
+    }
+  }
+
+  async function onInvitePerson(invite) {
+    const key = inviteKey(invite)
+    setError('')
+    setNote('')
+    setSendingKey(key)
+    try {
+      await sendCreditInviteEmail({
+        filmId: invite.filmId,
+        token: invite.token,
+        email: invite.email,
+      })
+      setSentKeys((current) => (current.includes(key) ? current : [...current, key]))
+      setNote(`Sent an invite to ${invite.email}.`)
+    } catch (err) {
+      setError(err.message || 'Couldn’t send the invite.')
+    } finally {
+      setSendingKey('')
+    }
+  }
+
+  const title = !unlocked ? 'Enter debug password' : view === 'invites' ? 'Pending invites' : 'Debug'
+
   return (
     <div className="upload-backdrop" onClick={onClose} role="presentation">
       <div
-        className="upload-modal settings-modal debug-modal"
+        className={`upload-modal settings-modal debug-modal${view === 'invites' ? ' is-list' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="debug-title"
@@ -66,27 +129,13 @@ export default function DebugModal({ onClose }) {
       >
         <div className="settings-main">
           <div className="settings-main-top">
-            <h2 id="debug-title">{unlocked ? 'Debug' : 'Enter debug password'}</h2>
+            <h2 id="debug-title">{title}</h2>
             <button type="button" className="upload-modal-close" onClick={onClose} aria-label="Close">
               <Icon name="close" />
             </button>
           </div>
 
-          {unlocked ? (
-            <div className="settings-body">
-              <p className="settings-copy">Tools for previewing screens that are hard to reach in a normal session.</p>
-              {error ? <p className="auth-error">{error}</p> : null}
-              {note ? <p className="settings-copy">{note}</p> : null}
-              <div className="settings-rows">
-                <button type="button" className="settings-row" disabled={busy} onClick={openInvitePreview}>
-                  Open invite page
-                </button>
-                <button type="button" className="settings-row" disabled={busy} onClick={onSendTestInvite}>
-                  {busy ? 'Sending…' : 'Send test invite email'}
-                </button>
-              </div>
-            </div>
-          ) : (
+          {!unlocked ? (
             <form className="settings-body" onSubmit={onUnlock}>
               <p className="settings-copy">Enter the debug password to open these tools.</p>
               <label className="field">
@@ -110,6 +159,80 @@ export default function DebugModal({ onClose }) {
                 </button>
               </div>
             </form>
+          ) : view === 'invites' ? (
+            <div className="settings-body">
+              <p className="settings-copy">
+                People who were invited on a film but may not have received the email.
+              </p>
+              {error ? <p className="auth-error">{error}</p> : null}
+              {note ? <p className="settings-copy">{note}</p> : null}
+              {loadingInvites ? (
+                <p className="settings-copy">Loading invites…</p>
+              ) : error ? null : invites.length === 0 ? (
+                <p className="settings-copy">No pending invite emails right now.</p>
+              ) : (
+                <div className="debug-invite-list">
+                  {invites.map((invite) => {
+                    const key = inviteKey(invite)
+                    const sent = sentKeys.includes(key)
+                    const sending = sendingKey === key
+                    return (
+                      <div className="debug-invite" key={key}>
+                        <div className="debug-invite-copy">
+                          <div className="debug-invite-name">{invite.name || 'Unnamed'}</div>
+                          <div className="debug-invite-meta">
+                            {invite.email}
+                            {' · '}
+                            {inviteRole(invite)}
+                            {' · '}
+                            {invite.filmTitle || 'Untitled'}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="solid-btn debug-invite-btn"
+                          disabled={Boolean(sendingKey) || sent}
+                          onClick={() => onInvitePerson(invite)}
+                        >
+                          {sent ? 'Sent' : sending ? 'Sending…' : 'Invite'}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+              <div className="settings-rows">
+                <button
+                  type="button"
+                  className="settings-row"
+                  disabled={Boolean(sendingKey)}
+                  onClick={() => {
+                    setView('tools')
+                    setError('')
+                    setNote('')
+                  }}
+                >
+                  Back
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="settings-body">
+              <p className="settings-copy">Tools for previewing screens that are hard to reach in a normal session.</p>
+              {error ? <p className="auth-error">{error}</p> : null}
+              {note ? <p className="settings-copy">{note}</p> : null}
+              <div className="settings-rows">
+                <button type="button" className="settings-row" disabled={busy} onClick={openInvitePreview}>
+                  Open invite page
+                </button>
+                <button type="button" className="settings-row" disabled={busy} onClick={onSendTestInvite}>
+                  {busy ? 'Sending…' : 'Send test invite email'}
+                </button>
+                <button type="button" className="settings-row" disabled={busy} onClick={openPendingInvites}>
+                  Pending invite emails
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

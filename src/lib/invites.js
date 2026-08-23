@@ -111,17 +111,41 @@ export async function sendFilmCreditInvites(filmId) {
   }
 }
 
+function callableError(err, fallback) {
+  const message = String(err?.message || '')
+    .replace(/^Firebase:\s*/i, '')
+    .replace(/\s*\([^)]*\)\s*$/, '')
+    .replace(/\s*\[[^\]]*\]\s*$/, '')
+    .trim()
+  return new Error(message || fallback)
+}
+
 export async function sendTestInviteEmail() {
   const send = httpsCallable(functions, 'sendTestInviteEmail')
   try {
     const result = await send({})
     return result.data
   } catch (err) {
-    const message = String(err?.message || '')
-      .replace(/^Firebase:\s*/i, '')
-      .replace(/\s*\([^)]*\)\s*$/, '')
-      .replace(/\s*\[[^\]]*\]\s*$/, '')
-      .trim()
-    throw new Error(message || 'Couldn’t send the test invite.')
+    throw callableError(err, 'Couldn’t send the test invite.')
+  }
+}
+
+export async function listPendingInvites() {
+  const list = httpsCallable(functions, 'listPendingInvites')
+  try {
+    const result = await list({})
+    return result.data?.invites || []
+  } catch (err) {
+    throw callableError(err, 'Couldn’t load pending invites.')
+  }
+}
+
+export async function sendCreditInviteEmail({ filmId, token, email }) {
+  const send = httpsCallable(functions, 'sendCreditInviteEmail')
+  try {
+    const result = await send({ filmId, token, email })
+    return result.data
+  } catch (err) {
+    throw callableError(err, 'Couldn’t send the invite.')
   }
 }

@@ -41,6 +41,92 @@ function acceptLink(invite, token) {
   return `${base}/invite/${token}`;
 }
 
+function filmTitleOf(film) {
+  return film?.title || film?.title || "Untitled";
+}
+
+function ownerNameOf(film) {
+  return film?.ownerName || film?.ownerName || "A filmmaker";
+}
+
+function crewToken(member) {
+  return String(member?.inviteToken || member?.inviteToken || "").trim();
+}
+
+function crewUserId(member) {
+  return String(member?.userId || member?.userId || "").trim();
+}
+
+function crewSentAt(member) {
+  return member?.inviteSentAt || member?.inviteSentAt || null;
+}
+
+async function deliverCreditInvite({ filmId, film, member, token, force = false }) {
+  const inviteRef = inviteDoc(token);
+  const inviteSnap = await inviteRef.get();
+  const invite = inviteSnap.exists ? inviteSnap.data() : {};
+  if (!force && invite.inviteSentAt) {
+    return { sent: false, inviteSentAt: invite.inviteSentAt };
+  }
+
+  const title = filmTitleOf(film);
+  const ownerName = ownerNameOf(film);
+  const roles = Array.isArray(member.roles) ? member.roles : [];
+  const kind = member.kind || member.kind || "crew";
+  const acceptUrl = acceptLink(invite, token);
+
+  await sendResendEmail({
+    to: member.email.trim(),
+    subject: `${ownerName} credited you on ${title}`,
+    html: creditInviteEmail({
+      ownerName,
+      filmTitle: title,
+      role: member.role,
+      roles,
+      kind,
+      poster: film.poster || invite.filmPoster,
+      logline: film.logline || invite.logline,
+      acceptUrl,
+      inviteeName: member.name,
+    }),
+    text: creditInviteText({
+      ownerName,
+      filmTitle: title,
+      role: member.role,
+      roles,
+      kind,
+      acceptUrl,
+      inviteeName: member.name,
+      logline: film.logline || invite.logline,
+    }),
+    idempotencyKey: force ? `resend-${token}-${Date.now()}` : token,
+  });
+
+  const sentAt = FieldValue.serverTimestamp();
+  await inviteRef.set(
+    {
+      filmId,
+      filmTitle: title,
+      filmPoster: film.poster || "",
+      logline: film.logline || "",
+      visibility: film.visibility,
+      ownerId: film.ownerId || film.ownerId || "",
+      ownerName,
+      name: member.name,
+      email: member.email.trim(),
+      emailLower: normalizeEmail(member.email),
+      role: member.role,
+      roles,
+      kind,
+      state: "sent",
+      inviteSentAt: sentAt,
+      updatedAt: sentAt,
+    },
+    { merge: true },
+  );
+  return { sent: true };
+}
+
 async function sendResendEmail({ to, subject, html, text, idempotencyKey }) {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
@@ -91,8 +177,8 @@ async function sendPendingInvites(filmId) {
     .map((member, index) =>
       member?.state === "invited" &&
       member.email &&
-      !member.inviteSentAt &&
-      !member.userId
+      !crewSentAt(member) &&
+      !crewUserId(member)
         ? index
         : -1,
     )
@@ -103,77 +189,25 @@ async function sendPendingInvites(filmId) {
   let sent = 0;
   for (const index of pendingIndexes) {
     const member = crew[index];
-    const token = member.inviteToken || crypto.randomUUID();
-    const inviteRef = inviteDoc(token);
-    const inviteSnap = await inviteRef.get();
-    const invite = inviteSnap.exists ? inviteSnap.data() : {};
-
-    if (!invite.inviteSentAt) {
-      try {
-        const acceptUrl = acceptLink(invite, token);
-        await sendResendEmail({
-          to: member.email.trim(),
-          subject: `${after.ownerName || "A filmmaker"} credited you on ${after.title}`,
-          html: creditInviteEmail({
-            ownerName: after.ownerName || "A filmmaker",
-            filmTitle: after.title,
-            role: member.role,
-            roles: Array.isArray(member.roles) ? member.roles : [],
-            kind: member.kind,
-            poster: after.poster || invite.filmPoster,
-            logline: after.logline || invite.logline,
-            acceptUrl,
-            inviteeName: member.name,
-          }),
-          text: creditInviteText({
-            ownerName: after.ownerName || "A filmmaker",
-            filmTitle: after.title,
-            role: member.role,
-            roles: Array.isArray(member.roles) ? member.roles : [],
-            kind: member.kind,
-            acceptUrl,
-            inviteeName: member.name,
-            logline: after.logline || invite.logline,
-          }),
-          idempotencyKey: token,
-        });
-        const sentAt = FieldValue.serverTimestamp();
-        await inviteRef.set(
-          {
-            filmId,
-            filmTitle: after.title,
-            filmPoster: after.poster || "",
-            logline: after.logline || "",
-            visibility: after.visibility,
-            ownerId: after.ownerId,
-            ownerName: after.ownerName || "",
-            name: member.name,
-            email: member.email.trim(),
-            emailLower: normalizeEmail(member.email),
-            role: member.role,
-            roles: Array.isArray(member.roles) ? member.roles : [],
-            kind: member.kind || "crew",
-            state: "sent",
-            inviteSentAt: sentAt,
-            updatedAt: sentAt,
-          },
-          { merge: true },
-        );
-        crew[index] = {
-          ...member,
-          inviteToken: token,
-          inviteSentAt: new Date().toISOString(),
-        };
-        sent += 1;
-      } catch (err) {
-        failures.push(`${member.name} (${member.email}): ${err.message}`);
-      }
-    } else {
+    const token = crewToken(member) || crypto.randomUUID();
+    try {
+      const result = await deliverCreditInvite({
+        filmId,
+        film: after,
+        member,
+        token,
+        force: false,
+      });
       crew[index] = {
         ...member,
         inviteToken: token,
-        inviteSentAt: invite.inviteSentAt,
+        inviteSentAt: result.sent
+          ? new Date().toISOString()
+          : result.inviteSentAt || crewSentAt(member),
       };
+      if (result.sent) sent += 1;
+    } catch (err) {
+      failures.push(`${member.name} (${member.email}): ${err.message}`);
     }
   }
 
@@ -286,6 +320,95 @@ export const sendTestInviteEmail = functions.https.onCall(
     }
   },
 );
+
+export const listPendingInvites = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Sign in to view pending invites.",
+    );
+  }
+  const filmsSnap = await db.collection("films").get();
+  const invites = [];
+  for (const filmDoc of filmsSnap.docs) {
+    const film = filmDoc.data();
+    const crew = Array.isArray(film.crew) ? film.crew : [];
+    for (const member of crew) {
+      if (member?.state !== "invited" || !member.email || crewUserId(member)) continue;
+      const roles = Array.isArray(member.roles) ? member.roles : member.role ? [member.role] : [];
+      invites.push({
+        token: crewToken(member),
+        filmId: filmDoc.id,
+        filmTitle: filmTitleOf(film),
+        name: member.name || "",
+        email: member.email.trim(),
+        role: member.role || "",
+        roles,
+        kind: member.kind || member.kind || "crew",
+      });
+    }
+  }
+  invites.sort(
+    (a, b) =>
+      (a.filmTitle || "").localeCompare(b.filmTitle || "") ||
+      (a.name || "").localeCompare(b.name || "") ||
+      (a.email || "").localeCompare(b.email || ""),
+  );
+  return { invites };
+});
+
+export const sendCreditInviteEmail = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Sign in to send an invite.",
+    );
+  }
+  const filmId = String(data?.filmId || "").trim();
+  const email = normalizeEmail(data?.email);
+  let token = String(data?.token || "").trim();
+  if (!filmId) {
+    throw new functions.https.HttpsError("invalid-argument", "Missing project.");
+  }
+
+  const filmSnap = await db.collection("films").doc(filmId).get();
+  if (!filmSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "That project is gone.");
+  }
+  const film = filmSnap.data();
+  const crew = Array.isArray(film.crew) ? film.crew.map((member) => ({ ...member })) : [];
+  const index = crew.findIndex((member) => {
+    if (token && crewToken(member) === token) return true;
+    if (email && normalizeEmail(member.email) === email && member.state === "invited") return true;
+    return false;
+  });
+  if (index < 0) {
+    throw new functions.https.HttpsError("not-found", "That invite is gone.");
+  }
+  const member = crew[index];
+  if (!member.email) {
+    throw new functions.https.HttpsError("failed-precondition", "That credit has no email.");
+  }
+  token = crewToken(member) || token || crypto.randomUUID();
+
+  try {
+    await deliverCreditInvite({ filmId, film, member, token, force: true });
+    crew[index] = {
+      ...member,
+      inviteToken: token,
+      inviteToken: token,
+      inviteSentAt: new Date().toISOString(),
+      inviteSentAt: new Date().toISOString(),
+    };
+    await filmSnap.ref.update({ crew });
+    return { ok: true, token };
+  } catch (err) {
+    throw new functions.https.HttpsError(
+      "internal",
+      err.message || "Couldn’t send the invite.",
+    );
+  }
+});
 
 export const claimInvitesOnProfile = functions.firestore
   .document("users/{uid}")

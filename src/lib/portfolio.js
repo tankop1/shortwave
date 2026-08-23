@@ -82,11 +82,13 @@ export function normalizePortfolio(raw = {}) {
   }
 }
 
+export const PORTFOLIO_FILM_LIMIT = 6
+
 export function defaultPortfolio(profile, films = []) {
   const name = profile?.name || 'Filmmaker'
   const roles = (profile?.roles || []).filter(Boolean)
   const roleLine = roles.length ? roles.join(', ').toLowerCase() : 'filmmaker'
-  const published = films.filter((film) => film.status === 'published').slice(0, 6)
+  const published = films.filter((film) => film.status === 'published').slice(0, PORTFOLIO_FILM_LIMIT)
   const grade = profile?.grade ? `, a ${String(profile.grade).toLowerCase()}` : ''
   return normalizePortfolio({
     heroTitle: 'I’ll make your film',
@@ -147,6 +149,23 @@ export async function savePortfolio(uid, portfolio) {
   await updateDoc(doc(db, 'users', uid), {
     portfolio: normalizePortfolio(portfolio),
     updatedAt: serverTimestamp(),
+  })
+}
+
+export async function includeFilmOnPortfolio(uid, filmId) {
+  if (!uid || !filmId) return
+  const userRef = doc(db, 'users', uid)
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(userRef)
+    if (!snap.exists()) return
+    const data = snap.data()
+    if (!data?.portfolio) return
+    const current = normalizePortfolio(data.portfolio)
+    if (current.filmIds.includes(filmId) || current.filmIds.length >= PORTFOLIO_FILM_LIMIT) return
+    tx.update(userRef, {
+      portfolio: normalizePortfolio({ ...current, filmIds: [...current.filmIds, filmId] }),
+      updatedAt: serverTimestamp(),
+    })
   })
 }
 
