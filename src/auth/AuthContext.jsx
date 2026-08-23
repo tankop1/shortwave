@@ -110,5 +110,6 @@ export function authErrorMessage(error) {
     return 'Email or password is incorrect.'
   }
   if (code.includes('popup-closed')) return 'Google sign-in was closed.'
+  if (code.includes('requires-recent-login')) return 'Enter your password again to continue.'
   return error?.message || 'Something went wrong. Try again.'
 }

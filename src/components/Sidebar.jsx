@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 import { NAV, PUBLIC_PATHS, initialsFromName } from '../data'
 import { subscribeMessages } from '../lib/messages'
 
-export default function Sidebar({ open = false, onClose, onUpload, onSignup, onLogin, onProtectedNav, onEditProfile }) {
+export default function Sidebar({ open = false, onClose, onUpload, onSignup, onLogin, onProtectedNav, onEditProfile, onOpenSettings }) {
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuth()
   const menuRef = useRef(null)
@@ -140,6 +140,17 @@ export default function Sidebar({ open = false, onClose, onUpload, onSignup, onL
                     }}
                   >
                     Credit requests
+                  </button>
+                  <button
+                    type="button"
+                    className="menu-item"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      close()
+                      onOpenSettings()
+                    }}
+                  >
+                    Settings
                   </button>
                   <button
                     type="button"

@@ -1,10 +1,12 @@
 import { initializeApp } from 'firebase-admin/app'
+import { getAuth } from 'firebase-admin/auth'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
 import * as functions from 'firebase-functions/v1'
 import { creditInviteEmail, creditInviteText } from './email.js'
 
 initializeApp()
 const db = getFirestore()
+const adminAuth = getAuth()
 
 const APP_URL = process.env.APP_URL || 'https://shortwave-ut.web.app'
 const MAIL_FROM = process.env.MAIL_FROM || 'Shortwave <beth.t@example.com>'
@@ -295,3 +297,78 @@ export const acceptCreditInvite = functions.https.onCall(async (data, context) =
 
   return { ok: true }
 })
+
+async function commitDeletes(refs) {
+  for (let i = 0; i < refs.length; i += 400) {
+    const batch = db.batch()
+    refs.slice(i, i + 400).forEach((ref) => batch.delete(ref))
+    await batch.commit()
+  }
+}
+
+async function deleteQuery(queryRef) {
+  while (true) {
+    const snap = await queryRef.limit(400).get()
+    if (snap.empty) return
+    await commitDeletes(snap.docs.map((item) => item.ref))
+    if (snap.size < 400) return
+  }
+}
+
+async function deleteOwnedFilm(filmRef) {
+  await Promise.all([
+    deleteQuery(filmRef.collection('reviews')),
+    deleteQuery(filmRef.collection('viewers')),
+  ])
+  await filmRef.delete()
+}
+
+export const deleteOwnAccount = functions
+  .runWith({ timeoutSeconds: 120, memory: '512MB' })
+  .https.onCall(async (_data, context) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Sign in to delete your account.')
+    }
+    const uid = context.auth.uid
+    const userRef = db.collection('users').doc(uid)
+    const profileSnap = await userRef.get()
+    const profile = profileSnap.exists ? profileSnap.data() : {}
+
+    const ownedFilms = await db.collection('films').where('ownerId', '==', uid).get()
+    for (const filmSnap of ownedFilms.docs) {
+      await deleteOwnedFilm(filmSnap.ref)
+    }
+
+    const crewedFilms = await db.collection('films').where('crewUids', 'array-contains', uid).get()
+    for (const filmSnap of crewedFilms.docs) {
+      const film = filmSnap.data()
+      const nextCrew = (Array.isArray(film.crew) ? film.crew : []).filter((member) => member?.userId !== uid)
+      await filmSnap.ref.update({
+        crew: nextCrew,
+        crewUids: (film.crewUids || []).filter((id) => id !== uid),
+      })
+    }
+
+    await deleteQuery(db.collection('invites').where('ownerId', '==', uid))
+    await deleteQuery(userRef.collection('messages'))
+
+    const slug = String(profile?.portfolioSlug || '').trim()
+    if (slug) {
+      const slugRef = db.collection('portfolioSlugs').doc(slug)
+      const slugSnap = await slugRef.get()
+      if (slugSnap.exists && slugSnap.data()?.uid === uid) {
+        await slugRef.delete()
+      }
+    }
+
+    try {
+      const reviewSnaps = await db.collectionGroup('reviews').where('userId', '==', uid).get()
+      await commitDeletes(reviewSnaps.docs.map((item) => item.ref))
+    } catch {
+      /* collection-group index may be missing */
+    }
+
+    if (profileSnap.exists) await userRef.delete()
+    await adminAuth.deleteUser(uid)
+    return { ok: true }
+  })

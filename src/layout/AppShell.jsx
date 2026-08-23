@@ -8,6 +8,7 @@ import UploadModal from '../components/UploadModal'
 import AuthModal from '../components/AuthModal'
 import OnboardingModal from '../components/OnboardingModal'
 import ProfileModal from '../components/ProfileModal'
+import SettingsModal from '../components/SettingsModal'
 import { useAuth } from '../auth/AuthContext'
 import { db } from '../firebase'
 import { decorateFilm, isCatalogVisible, isPortfolioPublicPath, isPublicPath } from '../data'
@@ -47,6 +48,7 @@ export default function AppShell() {
   const { user, profile, loading, needsOnboarding } = useAuth()
   const [authMode, setAuthMode] = useState(null)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [uploadOpen, setUploadOpen] = useState(false)
   const [editFilm, setEditFilm] = useState(null)
   const [activeId, setActiveId] = useState(null)
@@ -316,6 +318,7 @@ export default function AppShell() {
           onLogin={() => openAuth('login')}
           onProtectedNav={requireAccount}
           onEditProfile={() => setProfileOpen(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
         />
       )}
 
@@ -359,6 +362,7 @@ export default function AppShell() {
         />
       )}
       {profileOpen && !needsOnboarding && !bare && <ProfileModal onClose={() => setProfileOpen(false)} />}
+      {settingsOpen && !needsOnboarding && !bare && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       {needsOnboarding && !bare && <OnboardingModal />}
     </div>
   )
