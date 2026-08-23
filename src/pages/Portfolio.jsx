@@ -135,7 +135,7 @@ export default function Portfolio() {
 
   async function preview() {
     await flushSave()
-    if (slug) window.open(portfolioUrl(slug), '_blank', 'noopener,noreferrer')
+    if (slug) window.open(`${window.location.origin}/${slug}`, '_blank', 'noopener,noreferrer')
   }
 
   async function share() {

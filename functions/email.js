@@ -1,3 +1,5 @@
+const SITE_URL = String(process.env.APP_URL || 'https://shortwaveut.com').replace(/\/$/, '')
+
 function escapeHtml(value) {
   return String(value || '')
     .replaceAll('&', '&amp;')
@@ -44,10 +46,11 @@ export function creditInviteEmail({
     : ''
   const loglineBlock = line
     ? `<tr>
-        <td style="padding:0 32px 8px;font-size:14px;line-height:1.5;color:#8d8d88">${line}</td>
+        <td style="padding:0 32px 20px;font-family:Outfit,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#8d8d88">Log line: ${line}</td>
       </tr>`
     : ''
-  const hello = name ? `Hey ${name},` : 'Hey,'
+  const hello = name ? `Hi, ${name}!` : 'Hi!'
+  const siteHref = escapeHtml(SITE_URL)
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -66,15 +69,17 @@ export function creditInviteEmail({
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0b;padding:48px 16px">
     <tr>
       <td align="center">
-        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="width:100%;max-width:480px;background:#101011;border:1px solid rgba(255,255,255,0.08);border-radius:22px;overflow:hidden">
+        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="width:100%;max-width:480px">
           <tr>
-            <td style="padding:28px 32px 6px">
-              <div style="font-family:Syne,'Trebuchet MS',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.05em;color:#f4f4f1">Shortwave</div>
-              <div style="font-family:Outfit,Helvetica,Arial,sans-serif;margin-top:4px;font-size:12px;font-weight:500;color:#e8703a">The UT film site</div>
+            <td align="center" style="padding:0 8px 18px;text-align:center">
+              <a href="${siteHref}" style="display:block;font-family:Syne,'Trebuchet MS',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.05em;line-height:1;color:#f4f4f1;text-decoration:none">Shortwave</a>
+              <a href="${siteHref}" style="display:block;margin-top:1px;font-family:Outfit,Helvetica,Arial,sans-serif;font-size:12px;font-weight:500;color:#e8703a;text-decoration:none">The UT film site</a>
             </td>
           </tr>
+        </table>
+        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="width:100%;max-width:480px;background:#101011;border:1px solid rgba(255,255,255,0.08);border-radius:22px;overflow:hidden">
           <tr>
-            <td style="padding:18px 32px 10px;font-family:Outfit,Helvetica,Arial,sans-serif;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:#e8703a">You’re invited</td>
+            <td style="padding:24px 32px 10px;font-family:Outfit,Helvetica,Arial,sans-serif;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:#e8703a">You’re invited</td>
           </tr>
           <tr>
             <td style="padding:0 32px 16px;font-family:Syne,'Trebuchet MS',sans-serif;font-size:28px;line-height:1.15;font-weight:800;letter-spacing:-0.04em;color:#f4f4f1">
@@ -96,7 +101,7 @@ export function creditInviteEmail({
           <tr>
             <td style="padding:0 32px 28px">
               <a href="${safeUrl}" style="display:inline-block;background:#e8703a;color:#160c06;font-family:Outfit,Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;text-decoration:none;padding:13px 22px;border-radius:999px">
-                Accept your credit
+                Accept your credit!
               </a>
             </td>
           </tr>
@@ -115,12 +120,13 @@ export function creditInviteEmail({
 </html>`
 }
 
-export function creditInviteText({ ownerName, filmTitle, role, roles, kind, acceptUrl, inviteeName }) {
-  const hello = inviteeName ? `Hey ${inviteeName},` : 'Hey,'
+export function creditInviteText({ ownerName, filmTitle, role, roles, kind, acceptUrl, inviteeName, logline }) {
+  const hello = inviteeName ? `Hi, ${inviteeName}!` : 'Hi!'
+  const loglineLine = logline ? `\nLog line: ${logline}\n` : '\n'
   return `${hello}
 
 ${ownerName} credited you as ${formatCreditRole(role, roles, kind)} on “${filmTitle}”.
-
+${loglineLine}
 Accept this invite to appear on the film’s cast & crew:
 ${acceptUrl}
 

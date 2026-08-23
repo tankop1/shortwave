@@ -110,3 +110,18 @@ export async function sendFilmCreditInvites(filmId) {
     throw new Error(message || 'Couldn’t send invite emails.')
   }
 }
+
+export async function sendTestInviteEmail() {
+  const send = httpsCallable(functions, 'sendTestInviteEmail')
+  try {
+    const result = await send({})
+    return result.data
+  } catch (err) {
+    const message = String(err?.message || '')
+      .replace(/^Firebase:\s*/i, '')
+      .replace(/\s*\([^)]*\)\s*$/, '')
+      .replace(/\s*\[[^\]]*\]\s*$/, '')
+      .trim()
+    throw new Error(message || 'Couldn’t send the test invite.')
+  }
+}

@@ -57,10 +57,10 @@ export function isValidSlug(slug) {
   return /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$|^[a-z0-9]{3,30}$/.test(slug || '')
 }
 
-export const PORTFOLIO_DISPLAY_HOST = 'shortwaveut.netlify.app'
+export const PORTFOLIO_DISPLAY_HOST = 'shortwaveut.com'
 
 export function portfolioUrl(slug) {
-  return `${window.location.origin}/${slug}`
+  return `https://${PORTFOLIO_DISPLAY_HOST}/${slug}`
 }
 
 export function normalizePortfolio(raw = {}) {
