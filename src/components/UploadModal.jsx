@@ -230,6 +230,7 @@ export default function UploadModal({ film, onClose }) {
         crew: crew.map((member) => ({
           name: member.name,
           role: member.role,
+          roles: Array.isArray(member.roles) ? member.roles : member.role ? [member.role] : [],
           kind: member.kind || 'crew',
           state: member.state,
           userId: member.userId || null,

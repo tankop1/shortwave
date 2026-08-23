@@ -2203,6 +2203,12 @@ button {
 
 .credit-board-row .credit-role {
   margin-left: auto;
+  text-align: right;
+  line-height: 1.25;
+}
+
+.credit-dialog .chips {
+  margin-top: 2px;
 }
 
 .credit-board-row .crew-state {
@@ -2222,7 +2228,8 @@ button {
 
 .credit-dialog {
   width: 100%;
-  max-width: 440px;
+  max-width: 480px;
+  max-height: calc(100vh - 48px);
   padding: 20px 20px 18px;
   background: #141415;
   border: 1px solid var(--line);
@@ -2230,7 +2237,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow: visible;
+  overflow: auto;
 }
 
 .credit-dialog-top {

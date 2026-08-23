@@ -4,7 +4,7 @@ import { useOutletContext } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { ProjectListSkeleton } from '../components/Skeleton'
 import { db } from '../firebase'
-import { statusKind, statusLabel } from '../data'
+import { formatRolePhrase, memberRoles, statusKind, statusLabel } from '../data'
 import { copyFilmLink } from '../lib/share'
 import { filmRating, formatAverage } from '../lib/reviews'
 import { filmAnalytics, formatCount } from '../lib/views'
@@ -109,7 +109,7 @@ export default function Projects() {
           <div key={film.id} className="credit-banner">
             <div>
               <div className="credit-banner-title">
-                {film.ownerName} credited you as <em>{credit?.role || 'crew'}</em> on “{film.title}”
+                {film.ownerName} credited you as <em>{formatRolePhrase(memberRoles(credit)) || credit?.role || 'crew'}</em> on “{film.title}”
               </div>
               <div className="credit-banner-copy">
                 It won’t show on your profile or portfolio until you accept.

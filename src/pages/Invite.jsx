@@ -3,6 +3,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { useOutletContext, Link, useParams } from 'react-router-dom'
 import { db } from '../firebase'
 import { useAuth } from '../auth/AuthContext'
+import { formatRolePhrase, memberRoles } from '../data'
 import { acceptCreditInvite, INVITE_STORAGE_KEY, normalizeEmail } from '../lib/invites'
 
 export default function Invite() {
@@ -80,7 +81,8 @@ export default function Invite() {
     )
   }
 
-  const roleLine = invite.kind === 'cast' ? `as ${invite.role || 'cast'}` : `as ${invite.role || 'crew'}`
+  const rolePhrase = formatRolePhrase(memberRoles(invite)) || invite.role
+  const roleLine = invite.kind === 'cast' ? `as ${rolePhrase || 'cast'}` : `as ${rolePhrase || 'crew'}`
 
   return (
     <main className="page invite-page">

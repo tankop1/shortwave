@@ -74,6 +74,7 @@ export async function upsertCreditInvites({ filmId, title, poster, logline, visi
           email: member.email.trim(),
           emailLower: normalizeEmail(member.email),
           role: member.role,
+          roles: Array.isArray(member.roles) ? member.roles : member.role ? [member.role] : [],
           kind: member.kind || 'crew',
           state: prior?.state || 'invited',
           createdAt: prior?.createdAt || serverTimestamp(),

@@ -6,10 +6,23 @@ function escapeHtml(value) {
     .replaceAll('"', '&quot;')
 }
 
+function formatCreditRole(role, roles, kind) {
+  const list = Array.isArray(roles) && roles.length
+    ? roles.map((item) => String(item).trim()).filter(Boolean)
+    : String(role || '')
+        .split(/\s*·\s*/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+  if (list.length <= 1) return list[0] || (kind === 'cast' ? 'cast' : 'crew')
+  if (list.length === 2) return `${list[0]} and ${list[1]}`
+  return `${list.slice(0, -1).join(', ')}, and ${list[list.length - 1]}`
+}
+
 export function creditInviteEmail({
   ownerName,
   filmTitle,
   role,
+  roles,
   kind,
   poster,
   logline,
@@ -18,7 +31,7 @@ export function creditInviteEmail({
 }) {
   const owner = escapeHtml(ownerName)
   const title = escapeHtml(filmTitle)
-  const creditRole = escapeHtml(role || (kind === 'cast' ? 'cast' : 'crew'))
+  const creditRole = escapeHtml(formatCreditRole(role, roles, kind))
   const name = escapeHtml(inviteeName || '')
   const line = escapeHtml(logline || '')
   const safeUrl = escapeHtml(acceptUrl)
@@ -102,11 +115,11 @@ export function creditInviteEmail({
 </html>`
 }
 
-export function creditInviteText({ ownerName, filmTitle, role, acceptUrl, inviteeName }) {
+export function creditInviteText({ ownerName, filmTitle, role, roles, kind, acceptUrl, inviteeName }) {
   const hello = inviteeName ? `Hey ${inviteeName},` : 'Hey,'
   return `${hello}
 
-${ownerName} credited you as ${role} on “${filmTitle}”.
+${ownerName} credited you as ${formatCreditRole(role, roles, kind)} on “${filmTitle}”.
 
 Accept this invite to appear on the film’s cast & crew:
 ${acceptUrl}

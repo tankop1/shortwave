@@ -2,12 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { collection, getDocs, limit, query } from 'firebase/firestore'
 import Icon from './Icon'
 import { db } from '../firebase'
-import { CREW_ROLES, avatar, hueFromName, roleChip } from '../data'
+import { CREW_ROLES, avatar, formatRolePhrase, formatRoles, hueFromName, memberRoles, roleChip } from '../data'
 import { isValidEmail, newInviteToken, rankPeople } from '../lib/invites'
 
 function memberKind(member) {
   if (member.kind === 'cast' || member.kind === 'crew') return member.kind
-  return CREW_ROLES.includes(member.role) ? 'crew' : 'cast'
+  return memberRoles(member).some((role) => CREW_ROLES.includes(role)) ? 'crew' : 'cast'
 }
 
 export default function CrewCredits({ crew, setCrew, user, profile }) {
@@ -86,13 +86,15 @@ export default function CrewCredits({ crew, setCrew, user, profile }) {
 }
 
 function CreditRow({ person, onRemove }) {
-  const chip = roleChip(person.role)
+  const roles = memberRoles(person)
+  const label = formatRoles(roles) || person.role
+  const chip = roleChip(roles[0] || person.role)
   return (
     <div className="credit-board-row">
       <PersonAvatar person={person} />
       <span className="credit-board-name">{person.name}</span>
       <span className="credit-role" style={{ color: chip.color }}>
-        {person.role}
+        {label}
       </span>
       <span className="crew-state">{person.state}</span>
       <button type="button" className="crew-remove" onClick={onRemove} aria-label={`Remove ${person.name}`}>
@@ -119,7 +121,9 @@ function CreditDialog({ kind, crew, user, profile, onClose, onAdd }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [position, setPosition] = useState('')
+  const [selectedRoles, setSelectedRoles] = useState([])
   const [otherRole, setOtherRole] = useState('')
+  const [showOther, setShowOther] = useState(false)
   const [picked, setPicked] = useState(null)
   const [inviteMode, setInviteMode] = useState(false)
   const [directory, setDirectory] = useState([])
@@ -177,9 +181,9 @@ function CreditDialog({ kind, crew, user, profile, onClose, onAdd }) {
     const q = name.trim()
     if (picked || !q) return []
     return rankPeople(directory, q)
-      .filter((person) => !crew.some((member) => member.userId === person.id))
+      .filter((person) => !crew.some((member) => member.userId === person.id && memberKind(member) === kind))
       .slice(0, 8)
-  }, [crew, directory, name, picked])
+  }, [crew, directory, kind, name, picked])
 
   const typedName = name.trim()
   const noUserMatch = directoryReady && typedName.length > 0 && matches.length === 0 && !picked
@@ -188,14 +192,24 @@ function CreditDialog({ kind, crew, user, profile, onClose, onAdd }) {
   const inviteOptionIndex = matches.length
   const optionCount = matches.length + 1
 
-  const roleValue = position === 'Other' ? otherRole.trim() : position.trim()
+  const roleList = [
+    ...selectedRoles,
+    ...(showOther && otherRole.trim() ? [otherRole.trim()] : []),
+  ]
+  const roleValue = isCast ? position.trim() : formatRoles(roleList)
   const inviteEmail = picked ? '' : email.trim() || (typedName.includes('@') ? typedName : '')
   const displayName = picked?.name || (typedName.includes('@') ? typedName.split('@')[0] : typedName)
   const canSave = Boolean(
     displayName &&
-      (isCast || roleValue) &&
+      (isCast || roleList.length) &&
       (picked || ((inviteMode || noUserMatch || typedName.includes('@')) && isValidEmail(inviteEmail))),
   )
+
+  function toggleRole(role) {
+    setSelectedRoles((current) =>
+      current.includes(role) ? current.filter((item) => item !== role) : [...current, role],
+    )
+  }
 
   function pickPerson(person) {
     setPicked(person)
@@ -247,9 +261,11 @@ function CreditDialog({ kind, crew, user, profile, onClose, onAdd }) {
 
   function save() {
     if (!canSave) return
+    const roles = isCast ? (roleValue ? [roleValue] : ['Cast']) : roleList
     onAdd({
       name: displayName,
-      role: isCast ? roleValue || 'Cast' : roleValue,
+      role: isCast ? roles[0] : formatRolePhrase(roles) || formatRoles(roles),
+      roles,
       kind,
       state: picked ? (picked.id === user?.uid ? 'accepted' : 'pending') : 'invited',
       userId: picked?.id || null,
@@ -375,23 +391,37 @@ function CreditDialog({ kind, crew, user, profile, onClose, onAdd }) {
           </label>
         ) : (
           <>
-            <label className="field">
-              <span className="field-label">Role</span>
-              <select
-                className="field-select"
-                value={position}
-                onChange={(event) => setPosition(event.target.value)}
-              >
-                <option value="">Select a role</option>
+            <div className="field">
+              <span className="field-label">Roles</span>
+              <div className="chips">
                 {CREW_ROLES.map((role) => (
-                  <option key={role} value={role}>
+                  <button
+                    key={role}
+                    type="button"
+                    className={`chip${selectedRoles.includes(role) ? ' is-on' : ''}`}
+                    aria-pressed={selectedRoles.includes(role)}
+                    onClick={() => toggleRole(role)}
+                  >
                     {role}
-                  </option>
+                  </button>
                 ))}
-                <option value="Other">Other</option>
-              </select>
-            </label>
-            {position === 'Other' && (
+                <button
+                  type="button"
+                  className={`chip${showOther ? ' is-on' : ''}`}
+                  aria-pressed={showOther}
+                  onClick={() => {
+                    setShowOther((on) => {
+                      if (on) setOtherRole('')
+                      return !on
+                    })
+                  }}
+                >
+                  Other
+                </button>
+              </div>
+              <p className="field-help">Select every role they had on this film.</p>
+            </div>
+            {showOther && (
               <label className="field">
                 <span className="field-label">Custom role</span>
                 <input

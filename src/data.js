@@ -1,6 +1,7 @@
 const ROLE_HUES = {
   Director: 28,
   Writer: 28,
+  Scripty: 300,
   DP: 200,
   Gaffer: 200,
   Editor: 150,
@@ -117,8 +118,32 @@ export function isPublicPath(pathname) {
   return isPortfolioPublicPath(pathname)
 }
 
+export function memberRoles(member) {
+  if (Array.isArray(member?.roles) && member.roles.length) {
+    return member.roles.map((role) => String(role).trim()).filter(Boolean)
+  }
+  const role = member?.role
+  if (!role) return []
+  return String(role)
+    .split(/\s*·\s*/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+export function formatRoles(roles) {
+  return (roles || []).filter(Boolean).join(' · ')
+}
+
+export function formatRolePhrase(roles) {
+  const list = (roles || []).filter(Boolean)
+  if (list.length <= 1) return list[0] || ''
+  if (list.length === 2) return `${list[0]} and ${list[1]}`
+  return `${list.slice(0, -1).join(', ')}, and ${list[list.length - 1]}`
+}
+
 export function roleChip(role) {
-  const h = ROLE_HUES[role] ?? 40
+  const first = memberRoles({ role })[0] || role
+  const h = ROLE_HUES[first] ?? 40
   return {
     border: `oklch(0.62 0.11 ${h} / .45)`,
     bg: `oklch(0.62 0.11 ${h} / .13)`,
@@ -180,14 +205,19 @@ export function decorateFilm(film, uid) {
   const crew = film.crew || []
   const credits = crew
     .filter((member) => member.state !== 'invited')
-    .map((member) => ({
-      name: member.name,
-      role: member.role,
-      state: member.state,
-      stripe: avatar(ROLE_HUES[member.role] ?? 40),
-      ...roleChip(member.role),
-    }))
+    .map((member) => {
+      const roles = memberRoles(member)
+      const role = formatRoles(roles) || member.role || ''
+      return {
+        name: member.name,
+        role,
+        state: member.state,
+        stripe: avatar(ROLE_HUES[roles[0]] ?? 40),
+        ...roleChip(roles[0] || member.role),
+      }
+    })
   const yourCredit = uid ? crew.find((member) => member.userId === uid) : null
+  const yourRoles = memberRoles(yourCredit)
 
   return {
     ...film,
@@ -198,7 +228,7 @@ export function decorateFilm(film, uid) {
     minutes: durationMinutes(dur),
     poster: film.poster || '',
     hue: hueFromName(film.ownerName || film.title || ''),
-    yourRole: yourCredit?.role || '',
+    yourRole: formatRoles(yourRoles) || yourCredit?.role || '',
     credits,
     meta: [film.ownerName, dur, genre, year].filter(Boolean).join(' · '),
   }
