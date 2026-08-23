@@ -16,7 +16,7 @@ import { useAuth } from '../auth/AuthContext'
 import { COURSES, GENRES } from '../data'
 import { fetchVideoMeta } from '../lib/video'
 import { uploadImage } from '../lib/cloudinary'
-import { upsertCreditInvites } from '../lib/invites'
+import { upsertCreditInvites, sendFilmCreditInvites } from '../lib/invites'
 
 const STEPS = [
   {
@@ -265,6 +265,13 @@ export default function UploadModal({ film, onClose }) {
         ownerName: profile.name,
         crew: payload.crew,
       })
+      if (status === 'published' && payload.crew.some((member) => member.state === 'invited' && member.email)) {
+        try {
+          await sendFilmCreditInvites(filmId)
+        } catch {
+          /* film is already live; invites stay saved if email fails */
+        }
+      }
       onClose()
       navigate('/projects')
     } catch (err) {
@@ -525,7 +532,7 @@ export default function UploadModal({ film, onClose }) {
           <>
             <p className="upload-note">
               {invitedCount
-                ? `${invitedCount} ${invitedCount === 1 ? 'person' : 'people'} will be saved as invited. Send them their invite link after you publish.`
+                ? `${invitedCount} ${invitedCount === 1 ? 'person' : 'people'} will get an email invite to claim their credit when you publish.`
                 : crew.length
                   ? 'Everyone tagged already has an account.'
                   : 'You can tag crew later from My Projects.'}
