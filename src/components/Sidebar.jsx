@@ -136,10 +136,10 @@ export default function Sidebar({ open = false, onClose, onUpload, onSignup, onL
                     onClick={() => {
                       setMenuOpen(false)
                       close()
-                      navigate('/projects')
+                      navigate('/credits')
                     }}
                   >
-                    Credit requests
+                    Credits &amp; requests
                   </button>
                   <button
                     type="button"

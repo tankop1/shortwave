@@ -265,6 +265,14 @@ export default function AppShell() {
     })
   }, [crewRaw, uid])
 
+  const acceptedCredits = useMemo(() => {
+    if (!uid) return []
+    return crewRaw.filter((film) => {
+      if (film.ownerId === uid) return false
+      return (film.crew || []).some((member) => member.userId === uid && member.state === 'accepted')
+    })
+  }, [crewRaw, uid])
+
   function closePlayer() {
     setActiveId(null)
     if (!filmParam) return
@@ -332,6 +340,7 @@ export default function AppShell() {
             myFilms,
             libraryLoading: loading || Boolean(uid && (!myReady || !crewReady)),
             pendingCredits,
+            acceptedCredits,
             byId,
             onOpen: setActiveId,
             onUpload: () => openUpload(),

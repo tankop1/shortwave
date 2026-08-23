@@ -132,7 +132,6 @@ export default function Player({ film, onClose, onSignup }) {
             </div>
           </div>
           {film.logline && <p className="player-logline">{film.logline}</p>}
-          <FilmReviews key={film.id} film={film} onSignup={onSignup} />
           {(film.credits || []).length > 0 && (
             <>
               <div className="credits-label">Cast &amp; crew</div>
@@ -147,6 +146,7 @@ export default function Player({ film, onClose, onSignup }) {
               </div>
             </>
           )}
+          <FilmReviews key={film.id} film={film} onSignup={onSignup} />
         </div>
       </div>
     </div>

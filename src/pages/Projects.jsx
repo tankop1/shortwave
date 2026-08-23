@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { doc, updateDoc } from 'firebase/firestore'
-import { useOutletContext } from 'react-router-dom'
+import { Link, useOutletContext } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { ProjectListSkeleton } from '../components/Skeleton'
-import { db } from '../firebase'
-import { formatRolePhrase, memberRoles, statusKind, statusLabel } from '../data'
+import { statusKind, statusLabel } from '../data'
 import { copyFilmLink } from '../lib/share'
 import { filmRating, formatAverage } from '../lib/reviews'
 import { filmAnalytics, formatCount } from '../lib/views'
@@ -36,7 +34,6 @@ function sortFilms(films, sort) {
 
 export default function Projects() {
   const { myFilms, libraryLoading, pendingCredits, onUpload, onEdit, onOpen, user, profile } = useOutletContext()
-  const [dismissed, setDismissed] = useState([])
   const [copiedId, setCopiedId] = useState(null)
   const [menuId, setMenuId] = useState(null)
   const [confirmFilm, setConfirmFilm] = useState(null)
@@ -44,8 +41,7 @@ export default function Projects() {
   const [deleteError, setDeleteError] = useState('')
   const [sort, setSort] = useState('new')
   const sortedFilms = useMemo(() => sortFilms(myFilms, sort), [myFilms, sort])
-
-  const pending = pendingCredits.filter((film) => !dismissed.includes(film.id))
+  const waiting = pendingCredits?.length || 0
 
   useEffect(() => {
     if (!confirmFilm || deleting) return undefined
@@ -55,18 +51,6 @@ export default function Projects() {
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [confirmFilm, deleting])
-
-  async function acceptCredit(film) {
-    if (!user) return
-    const crew = (film.crew || []).map((member) =>
-      member.userId === user.uid ? { ...member, state: 'accepted' } : member,
-    )
-    await updateDoc(doc(db, 'films', film.id), { crew })
-  }
-
-  function disputeCredit(film) {
-    setDismissed((current) => [...current, film.id])
-  }
 
   async function shareFilm(film) {
     try {
@@ -102,6 +86,19 @@ export default function Projects() {
 
   return (
     <main className="page projects-page">
+      {waiting > 0 && (
+        <div className="credit-banner">
+          <div>
+            <div className="credit-banner-title">
+              You have {waiting} credit request{waiting === 1 ? '' : 's'} waiting for your approval
+            </div>
+          </div>
+          <Link to="/credits" className="solid-btn">
+            View requests
+          </Link>
+        </div>
+      )}
+
       {myFilms.length > 0 && (
         <div className="projects-toolbar">
           <div className="projects-toolbar-meta">
@@ -116,28 +113,6 @@ export default function Projects() {
           </button>
         </div>
       )}
-
-      {pending.map((film) => {
-        const credit = (film.crew || []).find((member) => member.userId === user.uid)
-        return (
-          <div key={film.id} className="credit-banner">
-            <div>
-              <div className="credit-banner-title">
-                {film.ownerName} credited you as <em>{formatRolePhrase(memberRoles(credit)) || credit?.role || 'crew'}</em> on “{film.title}”
-              </div>
-              <div className="credit-banner-copy">
-                It won’t show on your profile or portfolio until you accept.
-              </div>
-            </div>
-            <button type="button" className="solid-btn" onClick={() => acceptCredit(film)}>
-              Accept credit
-            </button>
-            <button type="button" className="ghost-btn" onClick={() => disputeCredit(film)}>
-              Dispute
-            </button>
-          </div>
-        )
-      })}
 
       {myFilms.length === 0 ? (
         <div className="empty-panel">

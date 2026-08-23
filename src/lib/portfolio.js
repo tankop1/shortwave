@@ -10,6 +10,7 @@ export const RESERVED_SLUGS = new Set([
   'invite',
   'list',
   'inbox',
+  'credits',
   'admin',
   'login',
   'signup',

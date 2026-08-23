@@ -94,6 +94,7 @@ export const RESERVED_PATHS = new Set([
   'invite',
   'list',
   'inbox',
+  'credits',
   'admin',
   'login',
   'signup',
@@ -204,7 +205,7 @@ export function decorateFilm(film, uid) {
       : film.year || ''
   const crew = film.crew || []
   const credits = crew
-    .filter((member) => member.state !== 'invited')
+    .filter((member) => member.state !== 'invited' && member.state !== 'declined')
     .map((member) => {
       const roles = memberRoles(member)
       const role = formatRoles(roles) || member.role || ''

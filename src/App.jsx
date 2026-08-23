@@ -8,6 +8,7 @@ import Portfolio from './pages/Portfolio'
 import Saved from './pages/Saved'
 import Invite from './pages/Invite'
 import Inbox from './pages/Inbox'
+import Credits from './pages/Credits'
 import PublicPortfolio from './pages/PublicPortfolio'
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/inbox" element={<Inbox />} />
+            <Route path="/credits" element={<Credits />} />
             <Route path="/invite/:token" element={<Invite />} />
             <Route path="/list" element={<Saved />} />
             <Route path="/:slug" element={<PublicPortfolio />} />
