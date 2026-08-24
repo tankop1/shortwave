@@ -986,6 +986,7 @@ button {
 }
 
 .player {
+  position: relative;
   width: 100%;
   max-width: 920px;
   background: #141415;
@@ -1024,6 +1025,7 @@ button {
   position: absolute;
   top: 16px;
   right: 16px;
+  z-index: 3;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -2117,6 +2119,12 @@ button {
   margin-top: 22px;
 }
 
+.profile-modal-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .settings-modal {
   max-width: 760px;
   min-height: 440px;
@@ -3182,6 +3190,10 @@ button {
 }
 
 @media (max-width: 860px) {
+  :root {
+    --mobile-topbar-h: 80px;
+  }
+
   .app {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(0, 1fr);
@@ -3198,8 +3210,8 @@ button {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    min-height: 58px;
-    padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px 16px;
+    min-height: var(--mobile-topbar-h);
+    padding: calc(18px + env(safe-area-inset-top, 0px)) 12px 18px 16px;
     background: var(--panel);
     border-bottom: 1px solid var(--line);
   }
@@ -3247,18 +3259,16 @@ button {
   .sidebar {
     display: flex;
     position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     z-index: 71;
     grid-row: 1 / -1;
     grid-column: 1;
-    width: min(320px, 88vw);
+    width: 100%;
     height: 100dvh;
-    padding: calc(70px + env(safe-area-inset-top, 0px)) 16px
-      calc(18px + env(safe-area-inset-bottom, 0px));
+    padding: calc(var(--mobile-topbar-h) + env(safe-area-inset-top, 0px) + 20px)
+      16px calc(18px + env(safe-area-inset-bottom, 0px));
     border-right: none;
-    border-left: 1px solid var(--line);
+    border-left: none;
     overflow-y: auto;
     overscroll-behavior: contain;
     transform: translateX(100%);
@@ -3273,7 +3283,7 @@ button {
     transform: translateX(0);
     visibility: visible;
     pointer-events: auto;
-    box-shadow: -16px 0 40px rgba(0, 0, 0, 0.35);
+    box-shadow: none;
   }
 
   .sidebar .brand {
@@ -3366,11 +3376,14 @@ button {
   }
 
   .hero-watch,
-  .shot-play,
   .player-watch {
     height: 38px;
     padding: 0 14px;
     font-size: 13px;
+  }
+
+  .shot-play {
+    display: none;
   }
 
   .shot-title {
@@ -3410,6 +3423,26 @@ button {
 
   .project-title {
     font-size: 18px;
+  }
+
+  .project-actions {
+    position: relative;
+  }
+
+  .project-more-wrap {
+    position: static;
+  }
+
+  .project-more-menu {
+    left: 0;
+    right: 0;
+    width: auto;
+    top: calc(100% + 8px);
+  }
+
+  .project-row:has(.project-more-menu) {
+    position: relative;
+    z-index: 6;
   }
 
   .invite-card {
@@ -3454,7 +3487,7 @@ button {
   }
 
   .feature-row {
-    --row-cols: 1;
+    --row-cols: 1.45;
   }
 
   .template-grid,
@@ -3497,12 +3530,19 @@ button {
   .player-backdrop {
     padding: 0;
     align-items: stretch;
+    overflow: hidden;
   }
 
   .player {
     max-width: none;
     border-radius: 0;
-    min-height: 100%;
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-top: calc(56px + env(safe-area-inset-top, 0px));
   }
 
   .player-body {
@@ -3516,7 +3556,7 @@ button {
   .player-close {
     width: 44px;
     height: 44px;
-    top: max(10px, env(safe-area-inset-top, 0px));
+    top: max(8px, env(safe-area-inset-top, 0px));
     right: 10px;
   }
 
@@ -3563,6 +3603,50 @@ button {
     border-radius: 20px;
     padding: 16px;
     max-height: 100dvh;
+  }
+
+  .profile-backdrop {
+    padding: 0;
+    align-items: stretch;
+    overflow: hidden;
+  }
+
+  .profile-modal {
+    max-width: none;
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    border: 0;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .profile-modal .upload-fields {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .profile-modal-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .profile-modal .upload-modal-foot {
+    flex: none;
+    margin-top: 0;
+    padding: 12px 0 calc(16px + env(safe-area-inset-bottom, 0px));
   }
 
   .settings-modal {
@@ -3731,6 +3815,10 @@ button {
   flex: none;
 }
 
+.studio-domain-btn {
+  display: none;
+}
+
 .studio-actions .ghost-btn:disabled {
   opacity: 0.45;
   cursor: default;
@@ -3745,6 +3833,41 @@ button {
 .studio-canvas {
   flex: 1;
   overflow-x: clip;
+}
+
+.studio-domain-modal {
+  max-width: 440px;
+}
+
+.studio-domain-copy {
+  margin: 8px 0 18px;
+  color: var(--mute);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.studio-domain-input {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: #101011;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 14px;
+}
+
+.studio-domain-input .studio-host {
+  flex: none;
+}
+
+.studio-domain-modal .studio-domain-input input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  background: none;
+  border: 0;
+  padding: 12px 0 12px 4px;
+  border-radius: 0;
 }
 
 .psite-page {
@@ -4806,17 +4929,38 @@ textarea.is-editable {
 @media (max-width: 860px) {
   .studio {
     margin: -18px calc(var(--shell-x) * -1) -72px;
-    min-height: calc(100dvh - 58px);
+    min-height: calc(100dvh - var(--mobile-topbar-h));
   }
 
   .studio-bar {
-    flex-wrap: wrap;
-    padding: 10px 16px 12px;
+    position: sticky;
+    top: var(--mobile-topbar-h);
+    z-index: 24;
+    flex-wrap: nowrap;
+    padding: 18px 16px 14px;
+  }
+
+  .studio-slug {
+    display: none;
   }
 
   .studio-actions {
     width: 100%;
     justify-content: flex-end;
+  }
+
+  .studio-domain-btn {
+    display: inline-flex;
+    margin-right: auto;
+  }
+
+  .studio-actions .ghost-btn:not(.studio-domain-btn) {
+    width: 40px;
+    padding: 0;
+  }
+
+  .studio-actions .ghost-btn:not(.studio-domain-btn) .studio-btn-copy {
+    display: none;
   }
 
   .psite {

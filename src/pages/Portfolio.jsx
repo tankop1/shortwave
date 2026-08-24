@@ -33,6 +33,7 @@ export default function Portfolio() {
   const [mediaOpen, setMediaOpen] = useState(false)
   const [filmsOpen, setFilmsOpen] = useState(false)
   const [styleOpen, setStyleOpen] = useState(false)
+  const [domainOpen, setDomainOpen] = useState(false)
   const saveTimer = useRef(null)
   const portfolioRef = useRef(null)
   const booted = useRef(false)
@@ -107,17 +108,17 @@ export default function Portfolio() {
   }
 
   async function commitSlug() {
-    if (!user || !slug || slugChecking) return
+    if (!user || !slug || slugChecking) return true
     const next = normalizeSlug(slugDraft)
     setSlugError('')
     setSlugNote('')
     if (!next || next === slug) {
       setSlugDraft(slug)
-      return
+      return true
     }
     if (!isValidSlug(next)) {
       setSlugError('Use 3–30 letters, numbers, or hyphens.')
-      return
+      return false
     }
     setSlugChecking(true)
     try {
@@ -126,11 +127,19 @@ export default function Portfolio() {
       setSlugDraft(claimed)
       setSlugNote('Available — link updated')
       window.setTimeout(() => setSlugNote(''), 2200)
+      return true
     } catch (err) {
       setSlugError(err?.message || 'That link isn’t available.')
+      return false
     } finally {
       setSlugChecking(false)
     }
+  }
+
+  async function saveDomain(event) {
+    event.preventDefault()
+    const ok = await commitSlug()
+    if (ok) setDomainOpen(false)
   }
 
   async function preview() {
@@ -208,14 +217,26 @@ export default function Portfolio() {
           {!slugChecking && slugError ? <span className="studio-slug-err">{slugError}</span> : null}
         </label>
         <div className="studio-actions">
-          {saving ? <span className="studio-save">Saving</span> : null}
-          <button type="button" className="ghost-btn" onClick={() => setStyleOpen(true)}>
-            <Icon name="palette" />
-            Style
+          <button
+            type="button"
+            className="ghost-btn studio-domain-btn"
+            onClick={() => {
+              setSlugError('')
+              setSlugNote('')
+              setDomainOpen(true)
+            }}
+          >
+            <Icon name="edit" />
+            Domain
           </button>
-          <button type="button" className="ghost-btn" onClick={preview}>
+          {saving ? <span className="studio-save">Saving</span> : null}
+          <button type="button" className="ghost-btn" aria-label="Style" onClick={() => setStyleOpen(true)}>
+            <Icon name="palette" />
+            <span className="studio-btn-copy">Style</span>
+          </button>
+          <button type="button" className="ghost-btn" aria-label="Preview" onClick={preview}>
             <Icon name="eye" />
-            Preview
+            <span className="studio-btn-copy">Preview</span>
           </button>
           <button type="button" className="solid-btn" onClick={share}>
             <Icon name="share" className="icon-dark icon-share" />
@@ -261,6 +282,57 @@ export default function Portfolio() {
           onChange={patch}
           onClose={() => setStyleOpen(false)}
         />
+      )}
+      {domainOpen && (
+        <div className="upload-backdrop" onClick={() => setDomainOpen(false)} role="presentation">
+          <form
+            className="upload-modal studio-domain-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="domain-panel-title"
+            onClick={(event) => event.stopPropagation()}
+            onSubmit={saveDomain}
+          >
+            <div className="upload-modal-top">
+              <h2 id="domain-panel-title" className="profile-modal-title">
+                Domain
+              </h2>
+              <button type="button" className="upload-modal-close" onClick={() => setDomainOpen(false)} aria-label="Close">
+                <Icon name="close" />
+              </button>
+            </div>
+            <p className="studio-domain-copy">This is the public link for your site.</p>
+            <label className="field">
+              <span className="field-label">Your link</span>
+              <span className="studio-domain-input">
+                <span className="studio-host">{PORTFOLIO_DISPLAY_HOST}/</span>
+                <input
+                  value={slugDraft}
+                  spellCheck={false}
+                  aria-label="Portfolio link"
+                  disabled={slugChecking}
+                  autoFocus
+                  onChange={(event) => {
+                    setSlugDraft(event.target.value.toLowerCase())
+                    setSlugError('')
+                    setSlugNote('')
+                  }}
+                />
+              </span>
+            </label>
+            {slugChecking ? <p className="studio-slug-wait">Checking…</p> : null}
+            {!slugChecking && slugNote ? <p className="studio-slug-ok">{slugNote}</p> : null}
+            {!slugChecking && slugError ? <p className="studio-slug-err">{slugError}</p> : null}
+            <div className="upload-modal-foot">
+              <button type="button" className="ghost-btn" onClick={() => setDomainOpen(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="solid-btn" disabled={slugChecking}>
+                {slugChecking ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </form>
+        </div>
       )}
     </main>
   )

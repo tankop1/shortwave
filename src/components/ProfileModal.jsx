@@ -75,7 +75,7 @@ export default function ProfileModal({ onClose }) {
   }
 
   return (
-    <div className="upload-backdrop" onClick={onClose} role="presentation">
+    <div className="upload-backdrop profile-backdrop" onClick={onClose} role="presentation">
       <div
         className="upload-modal profile-modal"
         role="dialog"
@@ -92,6 +92,7 @@ export default function ProfileModal({ onClose }) {
           </button>
         </div>
         <form className="upload-fields" onSubmit={onSubmit}>
+          <div className="profile-modal-scroll">
           <div className="field">
             <span className="field-label">Profile photo</span>
             <div className="profile-photo">
@@ -165,6 +166,7 @@ export default function ProfileModal({ onClose }) {
             </div>
           </div>
           {error && <p className="auth-error">{error}</p>}
+          </div>
           <div className="upload-modal-foot">
             <button type="button" className="ghost-btn" onClick={onClose}>
               Cancel

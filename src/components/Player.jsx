@@ -65,6 +65,14 @@ export default function Player({ film, onClose, onSignup }) {
         aria-labelledby="player-title"
         onClick={(event) => event.stopPropagation()}
       >
+        <button
+          type="button"
+          className="player-close"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          <Icon name="close" />
+        </button>
         <div className="player-stage">
           {playing && embed ? (
             <iframe
@@ -86,14 +94,6 @@ export default function Player({ film, onClose, onSignup }) {
               )}
             </>
           )}
-          <button
-            type="button"
-            className="player-close"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            <Icon name="close" />
-          </button>
         </div>
         <div className="player-body">
           <div className="player-top">
