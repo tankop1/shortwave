@@ -13,7 +13,7 @@ import DebugModal from '../components/DebugModal'
 import { useAuth } from '../auth/AuthContext'
 import { db } from '../firebase'
 import { decorateFilm, isCatalogVisible, isPortfolioPublicPath, isPublicPath } from '../data'
-import { filmIdFromSearch, wantsSignup } from '../lib/share'
+import { filmIdFromSearch, wantsSignup, wantsUpload } from '../lib/share'
 import { parseVideoUrl } from '../lib/video'
 
 function sortByCreated(a, b) {
@@ -68,6 +68,7 @@ export default function AppShell() {
   const uid = user?.uid || null
   const filmParam = filmIdFromSearch(location.search)
   const signupParam = wantsSignup(location.search)
+  const uploadParam = wantsUpload(location.search)
   const bare = isPortfolioPublicPath(location.pathname)
 
   useEffect(() => {
@@ -152,10 +153,14 @@ export default function AppShell() {
   useEffect(() => {
     if (loading) return
     if (!user && !isPublicPath(location.pathname)) {
-      navigate(filmParam ? `/?film=${encodeURIComponent(filmParam)}` : '/', { replace: true })
+      const params = new URLSearchParams()
+      if (filmParam) params.set('film', filmParam)
+      if (uploadParam) params.set('upload', '1')
+      const search = params.toString()
+      navigate(search ? `/?${search}` : '/', { replace: true })
       setAuthMode('signup')
     }
-  }, [user, loading, location.pathname, navigate, filmParam])
+  }, [user, loading, location.pathname, navigate, filmParam, uploadParam])
 
   useEffect(() => {
     if (loading || !signupParam) return
@@ -168,6 +173,25 @@ export default function AppShell() {
       { replace: true },
     )
   }, [loading, signupParam, user, location.search, navigate])
+
+  useEffect(() => {
+    if (loading || !uploadParam) return
+    if (!user) {
+      setAuthMode('signup')
+      return
+    }
+    if (needsOnboarding) return
+    setActiveId(null)
+    setEditFilm(null)
+    setUploadOpen(true)
+    const params = new URLSearchParams(location.search)
+    params.delete('upload')
+    const search = params.toString()
+    navigate(
+      { pathname: location.pathname, search: search ? `?${search}` : '', hash: location.hash },
+      { replace: true },
+    )
+  }, [loading, uploadParam, user, needsOnboarding, location.search, location.pathname, location.hash, navigate])
 
   useEffect(() => {
     setNavOpen(false)

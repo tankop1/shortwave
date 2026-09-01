@@ -1,5 +1,7 @@
 export const FILM_PARAM = 'film'
 export const SIGNUP_PARAM = 'signup'
+export const MESSAGE_PARAM = 'message'
+export const UPLOAD_PARAM = 'upload'
 
 export function filmShareUrl(filmId) {
   const url = new URL('/', window.location.origin)
@@ -13,6 +15,15 @@ export function filmIdFromSearch(search) {
 
 export function wantsSignup(search) {
   const value = new URLSearchParams(search).get(SIGNUP_PARAM)
+  return value === '1' || value === 'true'
+}
+
+export function messageIdFromSearch(search) {
+  return new URLSearchParams(search).get(MESSAGE_PARAM) || null
+}
+
+export function wantsUpload(search) {
+  const value = new URLSearchParams(search).get(UPLOAD_PARAM)
   return value === '1' || value === 'true'
 }
 

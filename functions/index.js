@@ -2,7 +2,18 @@ import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import * as functions from "firebase-functions/v1";
-import { creditInviteEmail, creditInviteText } from "./email.js";
+import {
+  contactMessageEmail,
+  contactMessageText,
+  creditInviteEmail,
+  creditInviteText,
+  filmRatingEmail,
+  filmRatingText,
+  tenPlaysEmail,
+  tenPlaysText,
+  welcomeEmail,
+  welcomeText,
+} from "./email.js";
 
 initializeApp();
 const db = getFirestore();
@@ -10,6 +21,7 @@ const adminAuth = getAuth();
 
 const APP_URL = process.env.APP_URL || "https://shortwave-ut.web.app";
 const MAIL_FROM = process.env.MAIL_FROM || "Shortwave <beth.t@example.com>";
+const TEST_MAIL_TO = "shortwaveut@gmail.com";
 
 function normalizeEmail(value) {
   return String(value || "")
@@ -162,6 +174,31 @@ async function sendResendEmail({ to, subject, html, text, idempotencyKey }) {
   return payload;
 }
 
+function siteLink(path) {
+  const base = String(APP_URL).replace(/\/$/, "");
+  const next = String(path || "/");
+  return `${base}${next.startsWith("/") ? next : `/${next}`}`;
+}
+
+function filmPageLink(filmId) {
+  return siteLink(`/?film=${encodeURIComponent(filmId)}`);
+}
+
+async function emailForUid(uid) {
+  if (!uid) return "";
+  const [authUser, profileSnap] = await Promise.all([
+    adminAuth.getUser(uid).catch(() => null),
+    db.collection("users").doc(uid).get(),
+  ]);
+  const profile = profileSnap.exists ? profileSnap.data() : {};
+  return (
+    normalizeEmail(authUser?.email) ||
+    normalizeEmail(profile.email) ||
+    normalizeEmail(profile.utEmail) ||
+    ""
+  );
+}
+
 async function sendPendingInvites(filmId) {
   const filmSnap = await db.collection("films").doc(filmId).get();
   if (!filmSnap.exists) {
@@ -232,6 +269,167 @@ export const sendCreditInviteEmails = functions.firestore
       await sendPendingInvites(context.params.filmId);
     } catch (err) {
       console.error("sendCreditInviteEmails", err);
+    }
+  });
+
+export const notifyContactMessage = functions.firestore
+  .document("users/{uid}/messages/{messageId}")
+  .onCreate(async (snap, context) => {
+    const message = snap.data() || {};
+    const uid = context.params.uid;
+    const messageId = context.params.messageId;
+    const to = await emailForUid(uid);
+    if (!to) return;
+
+    const profileSnap = await db.collection("users").doc(uid).get();
+    const ownerName = profileSnap.exists ? profileSnap.data()?.name || "" : "";
+    const senderName = String(message.name || "Someone").trim() || "Someone";
+    const inboxUrl = siteLink(
+      `/inbox?message=${encodeURIComponent(messageId)}`,
+    );
+
+    try {
+      await sendResendEmail({
+        to,
+        subject: `${senderName} sent you a message on Shortwave`,
+        html: contactMessageEmail({
+          ownerName,
+          senderName,
+          preview: message.message,
+          inboxUrl,
+        }),
+        text: contactMessageText({
+          ownerName,
+          senderName,
+          preview: message.message,
+          inboxUrl,
+        }),
+        idempotencyKey: `contact-${messageId}`,
+      });
+    } catch (err) {
+      console.error("notifyContactMessage", err);
+      throw err;
+    }
+  });
+
+export const notifyFilmRating = functions.firestore
+  .document("films/{filmId}/reviews/{userId}")
+  .onCreate(async (snap, context) => {
+    const review = snap.data() || {};
+    const filmId = context.params.filmId;
+    const reviewerId = context.params.userId;
+    const filmSnap = await db.collection("films").doc(filmId).get();
+    if (!filmSnap.exists) return;
+    const film = filmSnap.data();
+    const ownerId = String(film.ownerId || "").trim();
+    if (!ownerId || ownerId === reviewerId) return;
+
+    const to = await emailForUid(ownerId);
+    if (!to) return;
+
+    const title = filmTitleOf(film);
+    const ownerName = ownerNameOf(film);
+    const reviewerName = String(review.userName || "Someone").trim() || "Someone";
+    const filmUrl = filmPageLink(filmId);
+
+    try {
+      await sendResendEmail({
+        to,
+        subject: `${reviewerName} rated “${title}”`,
+        html: filmRatingEmail({
+          ownerName,
+          reviewerName,
+          filmTitle: title,
+          rating: review.rating,
+          filmUrl,
+        }),
+        text: filmRatingText({
+          ownerName,
+          reviewerName,
+          filmTitle: title,
+          rating: review.rating,
+          filmUrl,
+        }),
+        idempotencyKey: `rating-${filmId}-${reviewerId}`,
+      });
+    } catch (err) {
+      console.error("notifyFilmRating", err);
+      throw err;
+    }
+  });
+
+export const notifyTenPlays = functions.firestore
+  .document("films/{filmId}")
+  .onUpdate(async (change, context) => {
+    const before = change.before.data() || {};
+    const after = change.after.data() || {};
+    if (Number(before.views || 0) >= 10 || Number(after.views || 0) < 10) return;
+
+    const filmId = context.params.filmId;
+    const filmRef = change.after.ref;
+    const freshSnap = await filmRef.get();
+    if (!freshSnap.exists) return;
+    const film = freshSnap.data();
+    if (film.plays10Notified || Number(film.views || 0) < 10) return;
+
+    const ownerId = String(film.ownerId || "").trim();
+    if (!ownerId) return;
+    const to = await emailForUid(ownerId);
+    if (!to) return;
+
+    const title = filmTitleOf(film);
+    const ownerName = ownerNameOf(film);
+    const filmUrl = filmPageLink(filmId);
+
+    try {
+      await sendResendEmail({
+        to,
+        subject: `“${title}” just hit 10 plays`,
+        html: tenPlaysEmail({ ownerName, filmTitle: title, filmUrl }),
+        text: tenPlaysText({ ownerName, filmTitle: title, filmUrl }),
+        idempotencyKey: `plays10-${filmId}`,
+      });
+      await filmRef.update({ plays10Notified: true });
+    } catch (err) {
+      console.error("notifyTenPlays", err);
+      throw err;
+    }
+  });
+
+export const sendWelcomeEmailOnOnboard = functions.firestore
+  .document("users/{uid}")
+  .onWrite(async (change, context) => {
+    if (!change.after.exists) return;
+    const before = change.before.exists ? change.before.data() : null;
+    const after = change.after.data() || {};
+    if (!after.onboarded || before?.onboarded) return;
+
+    const uid = context.params.uid;
+    const userRef = change.after.ref;
+    const freshSnap = await userRef.get();
+    if (!freshSnap.exists || freshSnap.data()?.welcomeEmailedAt) return;
+
+    const to = await emailForUid(uid);
+    if (!to) return;
+
+    const uploadUrl = siteLink("/projects?upload=1");
+    const name = String(after.name || "").trim();
+
+    try {
+      await sendResendEmail({
+        to,
+        subject: "Welcome to Shortwave",
+        html: welcomeEmail({ name, uploadUrl }),
+        text: welcomeText({ name, uploadUrl }),
+        idempotencyKey: `welcome-${uid}`,
+      });
+      await userRef.set(
+        { welcomeEmailedAt: FieldValue.serverTimestamp() },
+        { merge: true },
+      );
+    } catch (err) {
+      console.error("sendWelcomeEmailOnOnboard", err);
+      throw err;
     }
   });
 
@@ -316,6 +514,135 @@ export const sendTestInviteEmail = functions.https.onCall(
       throw new functions.https.HttpsError(
         "internal",
         err.message || "Couldn’t send the test invite.",
+      );
+    }
+  },
+);
+
+function requireTestMailAuth(context, action) {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      `Sign in to send a test ${action}.`,
+    );
+  }
+}
+
+export const sendTestContactEmail = functions.https.onCall(
+  async (data, context) => {
+    requireTestMailAuth(context, "contact email");
+    const inboxUrl = siteLink("/inbox?message=preview");
+    try {
+      await sendResendEmail({
+        to: TEST_MAIL_TO,
+        subject: "Alex Rivera sent you a message on Shortwave",
+        html: contactMessageEmail({
+          ownerName: "Jordan Hale",
+          senderName: "Alex Rivera",
+          preview:
+            "Hey Jordan — loved Night Bus. Would you want to collab on a short this semester?",
+          inboxUrl,
+        }),
+        text: contactMessageText({
+          ownerName: "Jordan Hale",
+          senderName: "Alex Rivera",
+          preview:
+            "Hey Jordan — loved Night Bus. Would you want to collab on a short this semester?",
+          inboxUrl,
+        }),
+        idempotencyKey: `test-contact-${Date.now()}`,
+      });
+      return { ok: true };
+    } catch (err) {
+      throw new functions.https.HttpsError(
+        "internal",
+        err.message || "Couldn’t send the test contact email.",
+      );
+    }
+  },
+);
+
+export const sendTestRatingEmail = functions.https.onCall(
+  async (data, context) => {
+    requireTestMailAuth(context, "rating email");
+    const filmUrl = filmPageLink("preview");
+    try {
+      await sendResendEmail({
+        to: TEST_MAIL_TO,
+        subject: "Alex Rivera rated “Night Bus”",
+        html: filmRatingEmail({
+          ownerName: "Jordan Hale",
+          reviewerName: "Alex Rivera",
+          filmTitle: "Night Bus",
+          rating: 4,
+          filmUrl,
+        }),
+        text: filmRatingText({
+          ownerName: "Jordan Hale",
+          reviewerName: "Alex Rivera",
+          filmTitle: "Night Bus",
+          rating: 4,
+          filmUrl,
+        }),
+        idempotencyKey: `test-rating-${Date.now()}`,
+      });
+      return { ok: true };
+    } catch (err) {
+      throw new functions.https.HttpsError(
+        "internal",
+        err.message || "Couldn’t send the test rating email.",
+      );
+    }
+  },
+);
+
+export const sendTestPlaysEmail = functions.https.onCall(
+  async (data, context) => {
+    requireTestMailAuth(context, "plays email");
+    const filmUrl = filmPageLink("preview");
+    try {
+      await sendResendEmail({
+        to: TEST_MAIL_TO,
+        subject: "“Night Bus” just hit 10 plays",
+        html: tenPlaysEmail({
+          ownerName: "Jordan Hale",
+          filmTitle: "Night Bus",
+          filmUrl,
+        }),
+        text: tenPlaysText({
+          ownerName: "Jordan Hale",
+          filmTitle: "Night Bus",
+          filmUrl,
+        }),
+        idempotencyKey: `test-plays-${Date.now()}`,
+      });
+      return { ok: true };
+    } catch (err) {
+      throw new functions.https.HttpsError(
+        "internal",
+        err.message || "Couldn’t send the test plays email.",
+      );
+    }
+  },
+);
+
+export const sendTestWelcomeEmail = functions.https.onCall(
+  async (data, context) => {
+    requireTestMailAuth(context, "welcome email");
+    const uploadUrl = siteLink("/projects?upload=1");
+    try {
+      await sendResendEmail({
+        to: TEST_MAIL_TO,
+        subject: "Welcome to Shortwave",
+        html: welcomeEmail({ name: "Maya", uploadUrl }),
+        text: welcomeText({ name: "Maya", uploadUrl }),
+        idempotencyKey: `test-welcome-${Date.now()}`,
+      });
+      return { ok: true };
+    } catch (err) {
+      throw new functions.https.HttpsError(
+        "internal",
+        err.message || "Couldn’t send the test welcome email.",
       );
     }
   },

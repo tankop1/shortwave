@@ -8,6 +8,12 @@ import {
   sendCreditInviteEmail,
   sendTestInviteEmail,
 } from '../lib/invites'
+import {
+  sendTestContactEmail,
+  sendTestPlaysEmail,
+  sendTestRatingEmail,
+  sendTestWelcomeEmail,
+} from '../lib/mail'
 
 const DEBUG_PASSWORD = 'debug'
 
@@ -26,7 +32,7 @@ export default function DebugModal({ onClose }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [note, setNote] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState('')
   const [invites, setInvites] = useState([])
   const [loadingInvites, setLoadingInvites] = useState(false)
   const [sendingKey, setSendingKey] = useState('')
@@ -67,18 +73,22 @@ export default function DebugModal({ onClose }) {
     navigate(`/invite/${PREVIEW_INVITE_TOKEN}`)
   }
 
-  async function onSendTestInvite() {
+  async function sendTest(kind, send, successNote) {
     setError('')
     setNote('')
-    setBusy(true)
+    setBusy(kind)
     try {
-      await sendTestInviteEmail()
-      setNote('Sent a test invite to shortwaveut@gmail.com.')
+      await send()
+      setNote(successNote)
     } catch (err) {
-      setError(err.message || 'Couldn’t send the test invite.')
+      setError(err.message || 'Couldn’t send the test email.')
     } finally {
-      setBusy(false)
+      setBusy('')
     }
+  }
+
+  async function onSendTestInvite() {
+    await sendTest('invite', sendTestInviteEmail, 'Sent a test invite to shortwaveut@gmail.com.')
   }
 
   async function openPendingInvites() {
@@ -222,13 +232,45 @@ export default function DebugModal({ onClose }) {
               {error ? <p className="auth-error">{error}</p> : null}
               {note ? <p className="settings-copy">{note}</p> : null}
               <div className="settings-rows">
-                <button type="button" className="settings-row" disabled={busy} onClick={openInvitePreview}>
+                <button type="button" className="settings-row" disabled={Boolean(busy)} onClick={openInvitePreview}>
                   Open invite page
                 </button>
-                <button type="button" className="settings-row" disabled={busy} onClick={onSendTestInvite}>
-                  {busy ? 'Sending…' : 'Send test invite email'}
+                <button type="button" className="settings-row" disabled={Boolean(busy)} onClick={onSendTestInvite}>
+                  {busy === 'invite' ? 'Sending…' : 'Send test invite email'}
                 </button>
-                <button type="button" className="settings-row" disabled={busy} onClick={openPendingInvites}>
+                <button
+                  type="button"
+                  className="settings-row"
+                  disabled={Boolean(busy)}
+                  onClick={() => sendTest('contact', sendTestContactEmail, 'Sent a test contact email to shortwaveut@gmail.com.')}
+                >
+                  {busy === 'contact' ? 'Sending…' : 'Send test contact email'}
+                </button>
+                <button
+                  type="button"
+                  className="settings-row"
+                  disabled={Boolean(busy)}
+                  onClick={() => sendTest('rating', sendTestRatingEmail, 'Sent a test rating email to shortwaveut@gmail.com.')}
+                >
+                  {busy === 'rating' ? 'Sending…' : 'Send test rating email'}
+                </button>
+                <button
+                  type="button"
+                  className="settings-row"
+                  disabled={Boolean(busy)}
+                  onClick={() => sendTest('plays', sendTestPlaysEmail, 'Sent a test 10-plays email to shortwaveut@gmail.com.')}
+                >
+                  {busy === 'plays' ? 'Sending…' : 'Send test 10-plays email'}
+                </button>
+                <button
+                  type="button"
+                  className="settings-row"
+                  disabled={Boolean(busy)}
+                  onClick={() => sendTest('welcome', sendTestWelcomeEmail, 'Sent a test welcome email to shortwaveut@gmail.com.')}
+                >
+                  {busy === 'welcome' ? 'Sending…' : 'Send test welcome email'}
+                </button>
+                <button type="button" className="settings-row" disabled={Boolean(busy)} onClick={openPendingInvites}>
                   Pending invite emails
                 </button>
               </div>

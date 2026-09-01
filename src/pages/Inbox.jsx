@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
-import { Link, useOutletContext } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useOutletContext } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { markMessageRead, subscribeMessages } from '../lib/messages'
+import { messageIdFromSearch } from '../lib/share'
 import emptyInboxArt from '../assets/illustrations/Empty Inbox Illustration.png'
 
 function formatWhen(value) {
@@ -17,8 +18,11 @@ function formatWhen(value) {
 
 export default function Inbox() {
   const { user, profile } = useOutletContext()
+  const location = useLocation()
   const [messages, setMessages] = useState(null)
   const [openId, setOpenId] = useState(null)
+  const openedFromUrl = useRef(null)
+  const messageParam = messageIdFromSearch(location.search)
 
   useEffect(() => {
     if (!user?.uid) {
@@ -27,6 +31,21 @@ export default function Inbox() {
     }
     return subscribeMessages(user.uid, setMessages)
   }, [user?.uid])
+
+  useEffect(() => {
+    if (!messageParam || !messages || !user?.uid) return
+    if (openedFromUrl.current === messageParam) return
+    const match = messages.find((item) => item.id === messageParam)
+    if (!match) return
+    openedFromUrl.current = messageParam
+    setOpenId(match.id)
+    if (!match.read) {
+      markMessageRead(user.uid, match.id).catch(() => {})
+    }
+    requestAnimationFrame(() => {
+      document.getElementById(`inbox-${match.id}`)?.scrollIntoView({ block: 'nearest' })
+    })
+  }, [messageParam, messages, user?.uid])
 
   async function open(message) {
     setOpenId((current) => (current === message.id ? null : message.id))
@@ -69,7 +88,7 @@ export default function Inbox() {
           {messages.map((message) => {
             const openNow = openId === message.id
             return (
-              <article key={message.id} className={`inbox-card${message.read ? '' : ' is-unread'}${openNow ? ' is-open' : ''}`}>
+              <article id={`inbox-${message.id}`} key={message.id} className={`inbox-card${message.read ? '' : ' is-unread'}${openNow ? ' is-open' : ''}`}>
                 <button type="button" className="inbox-card-top" onClick={() => open(message)}>
                   <span className="inbox-from">{message.name}</span>
                   <span className="inbox-when">{formatWhen(message.createdAt)}</span>
